@@ -7,9 +7,9 @@
 # PLOT = 0
 
 import matplotlib.pyplot as plt
-from QEuropeFunctions import * 
+from QEuropeFunctions import *
 
-#Simulation time
+# Simulation time
 # simtime = 100000
 
 ns.sim_reset()
@@ -17,59 +17,64 @@ ns.sim_reset()
 net2 = QEurope("net")
 
 # Qonnector
-q = "Qonnector_1" # name for the qonnector 1.
+q = "Qonnector_1"
 net2.Add_Qonnector(q)
 
 # Nodes
 N_nodes = 5 # Number of nodes
 
-node_dist = {}
+#%%
+class Node:
+    def __init__(self, node_name, dist_to_Qonnector, node_type):
+        self.name = node_name
+        self.dist = dist_to_Qonnector
+        self.type = node_type # processor, etc. Not used yet.
+
+nodes = {}
+
+nodes[q] = Node(q, 0, 'Qonnector') # Qonnector.
 
 for n in range(N_nodes):
-    node_dist[n] = 1 # all nodes at distance 1, to begin.
-
-# node_dist = {1: 0.001, 2: 3.01} # distances from the node to the Qonnector
-
-# Connections between the parties and the Qonnector
-for n in node_dist.keys():
-    net2.Add_Qlient(str(n), 0.001, q)
-    # net2.Add_Qlient("node_Bob", 3.01, q)
-
-# net2.Add_Qlient("Telecom",18.77,"QonnectorParis")
-# net2.Add_Qlient("Chatillon",6.77,"QonnectorParis")
-# net2.Add_Qlient("CEA",31.35,"QonnectorParis")
+    nodes[n] = Node('node_%s'%str(n), 10*n, 'node') # distances d=10*n, for now.
+    
+    net2.Add_Qlient(nodes[n].name, nodes[n].dist, q) # Connections between the parties and the Qonnector
 
 #%%
-# Visual representation of the network.
+# Visualisation of the network.
 
 import networkx as nx
 G = nx.Graph()
 
-# elist = [('Alice', 'Qonnector'), ('Bob', 'Qonnector')]
-
 elist = []
+
 # Adding edges between the nodes and the Qonnector
-for n in node_dist.keys():
+for n in range(N_nodes):
     elist.append((str(n), q))
 
 G.add_edges_from(elist)
 
-# Value map for the colouring of the nodes:
-val_map = {q: 1.0}#,
-           # 'D': 0.5714285714285714,
-           # 'H': 0.0}
+colours = []
+for k in nodes.keys():
+    colours.append(nodes[k].dist) # Value map for the colouring of the nodes.
 
-values = [val_map.get(node, 0.25) for node in G.nodes()]
+cmap=plt.cm.summer
+nx.draw(G, cmap=cmap,#plt.get_cmap('summer'),
+        node_color=colours, with_labels=True, font_color='black', verticalalignment='center', horizontalalignment='center')
 
-nx.draw(G, cmap=plt.get_cmap('summer'), node_color=values, with_labels=True, font_color='black', verticalalignment='bottom')
+
+
+sm = plt.cm.ScalarMappable(cmap=cmap)#, norm=plt.Normalize(vmin = vmin, vmax=vmax))
+sm._A = []
+plt.colorbar(sm)
+
+
 plt.show()
 
 #%%
 
-
-# #Initialisation of the nodes
-# net = net2.network
-# Qonnector=net.get_node("QonnectorParis")
+#Initialisation of the nodes
+net = net2.network
+Qonnector=net.get_node("Qonnector")
 
 # Alice = net.get_node("node_Alice")
 # Bob = net.get_node("node_Alice")
