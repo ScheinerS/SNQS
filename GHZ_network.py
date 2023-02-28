@@ -6,8 +6,11 @@
 
 # PLOT = 0
 
+import numpy as np
 import matplotlib.pyplot as plt
 from QEuropeFunctions import *
+
+plt.rcParams['text.usetex'] = True
 
 # Simulation time
 # simtime = 100000
@@ -58,37 +61,43 @@ for k in nodes.keys():
     colours.append(nodes[k].dist) # Value map for the colouring of the nodes.
 
 cmap=plt.cm.summer
-nx.draw(G, cmap=cmap,#plt.get_cmap('summer'),
-        node_color=colours, with_labels=True, font_color='black', verticalalignment='center', horizontalalignment='center')
 
+node_positions = {} # pos (dict or None optional (default=None)) – Initial positions for nodes as a dictionary with node as keys and values as a coordinate list or tuple. If None, then use random initial positions.
+for k in nodes.keys():
+    node_positions[k] = (np.sqrt(nodes[k].dist), np.sqrt(nodes[k].dist))
+
+nx.draw(G, cmap=cmap, node_color=colours, with_labels=True, font_color='black', verticalalignment='center', horizontalalignment='center')
 
 
 sm = plt.cm.ScalarMappable(cmap=cmap)#, norm=plt.Normalize(vmin = vmin, vmax=vmax))
 sm._A = []
-plt.colorbar(sm)
+plt.colorbar(sm, orientation='vertical', shrink=0.8, label=r'Distance to Qonnector')
 
 
 plt.show()
 
 #%%
 
+# Here starts the GHZ distribution protocol. For now, it works only for four nodes.
+
 #Initialisation of the nodes
 net = net2.network
-Qonnector=net.get_node("Qonnector")
+Qonnector = net.get_node(q)
 
-# Alice = net.get_node("node_Alice")
-# Bob = net.get_node("node_Alice")
-# Charlie = net.get_node("Jussieu")
-# Dina = net.get_node("IRIF")
+Alice = net.get_node("node_1")
+Bob = net.get_node("node_2")
+Charlie = net.get_node("node_3")
+Dina = net.get_node("node_4")
 
-# Alice.keylist=[]
-# Bob.keylist=[]
-# Charlie.keylist=[]
-# Dina.keylist=[]
+Alice.keylist=[]
+Bob.keylist=[]
+Charlie.keylist=[]
+Dina.keylist=[]
 
-# #Initialisation of the protocol
-# GHZProtocol = SendGHZ4(Alice, Bob, Charlie, Dina, GHZ4_succ, Qonnector)
-# GHZProtocol.start()
+# Initialisation of the protocol
+ghzprotocol = SendGHZ4(Alice, Bob, Charlie, Dina, GHZ4_succ)
+
+ghzprotocol.start()
 
 # protocolA = ReceiveProtocol(Qonnector, Qlient_meas_succ, Qlient_meas_flip, False, Alice)
 # protocolA.start()
