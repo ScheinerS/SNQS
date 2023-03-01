@@ -83,21 +83,21 @@ fiber_dephasing_rate = 0.02 #dephasing rate in the fiber (Hz)
 
 
 
-#Satellite to Ground channel parameters
-txDiv = 5e-6
-sigmaPoint = 0.5e-6
-rx_aperture_sat = 1
-Cn2_sat = 0
+# #Satellite to Ground channel parameters
+# txDiv = 5e-6
+# sigmaPoint = 0.5e-6
+# rx_aperture_sat = 1
+# Cn2_sat = 0
 
-#Free space channel parameter
-W0 = 1550*1e-9/(txDiv*np.pi)
-rx_aperture_drone = 0.4
-rx_aperture_ground = 1
-Cn2_drone_to_ground = 10e-16#1e-15
-Cn2_drone_to_drone = 10e-18
-wavelength = 1550*1e-9
-c = 299792.458 #speed of light in km/s
-Tatm = 1
+# #Free space channel parameter
+# W0 = 1550*1e-9/(txDiv*np.pi)
+# rx_aperture_drone = 0.4
+# rx_aperture_ground = 1
+# Cn2_drone_to_ground = 10e-16#1e-15
+# Cn2_drone_to_drone = 10e-18
+# wavelength = 1550*1e-9
+# c = 299792.458 #speed of light in km/s
+# Tatm = 1
 
 #Quantum operations accessible to the Qonnectors
 qonnector_physical_instructions = [
