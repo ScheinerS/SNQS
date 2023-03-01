@@ -1,26 +1,27 @@
 #!/usr/bin/env python
 
-#This file creates a local network with one Qonnector and 4 Qlient then simulates the creation and sending of a 
-# 4 qubits GHZ state. The qubits received are stored in each Qlient's keylist.
+# This file creates a local network with one Qonnector and 4 Qlient then simulates the creation and sending of a 4 qubits GHZ state. The qubits received are stored in each Qlient's keylist.
 # The output printed are the number of successful GHZ reception the rate and the QBER.
 
 # PLOT = 0
 
 import numpy as np
 import matplotlib.pyplot as plt
+import networkx as nx
 from QEuropeFunctions import *
+import quantum_networks_functions as qnf
 
 plt.rcParams['text.usetex'] = True
 
 # Simulation time
-# simtime = 100000
+simtime = 100000
 
 ns.sim_reset()
 # Creation of a network instance
 net2 = QEurope("net")
 
 # Qonnector
-q = "Qonnector_1"
+q = "Qonnector 1"
 net2.Add_Qonnector(q)
 
 # Nodes
@@ -38,14 +39,13 @@ nodes = {}
 nodes[q] = Node(q, 0, 'Qonnector') # Qonnector.
 
 for n in range(N_nodes):
-    nodes[n] = Node('node_%s'%str(n), 10*n, 'node') # distances d=10*n, for now.
+    nodes[n] = Node('node_%s'%str(n), n/10, 'node') # distances d=10*n, for now.
     
     net2.Add_Qlient(nodes[n].name, nodes[n].dist, q) # Connections between the parties and the Qonnector
 
 #%%
 # Visualisation of the network.
 
-import networkx as nx
 G = nx.Graph()
 
 elist = []
@@ -82,6 +82,7 @@ plt.show()
 
 #Initialisation of the nodes
 net = net2.network
+
 Qonnector = net.get_node(q)
 
 Alice = net.get_node("node_1")
@@ -95,38 +96,36 @@ Charlie.keylist=[]
 Dina.keylist=[]
 
 # Initialisation of the protocol
-ghzprotocol = SendGHZ4(Alice, Bob, Charlie, Dina, GHZ4_succ)
+ghzprotocol = SendGHZ4(Alice, Bob, Charlie, Dina, GHZ4_succ, Qonnector)
 
 ghzprotocol.start()
 
-# protocolA = ReceiveProtocol(Qonnector, Qlient_meas_succ, Qlient_meas_flip, False, Alice)
-# protocolA.start()
+protocolA = ReceiveProtocol(Qonnector, Qlient_meas_succ, Qlient_meas_flip, False, Alice)
+protocolA.start()
 
-# protocolB = ReceiveProtocol(Qonnector, Qlient_meas_succ, Qlient_meas_flip, False, Bob)
-# protocolB.start()
+protocolB = ReceiveProtocol(Qonnector, Qlient_meas_succ, Qlient_meas_flip, False, Bob)
+protocolB.start()
 
-# protocolC = ReceiveProtocol(Qonnector, Qlient_meas_succ, Qlient_meas_flip, False, Charlie)
-# protocolC.start() 
+protocolC = ReceiveProtocol(Qonnector, Qlient_meas_succ, Qlient_meas_flip, False, Charlie)
+protocolC.start() 
         
-# protocolD = ReceiveProtocol(Qonnector, Qlient_meas_succ, Qlient_meas_flip,False, Dina)
-# protocolD.start()
+protocolD = ReceiveProtocol(Qonnector, Qlient_meas_succ, Qlient_meas_flip,False, Dina)
+protocolD.start()
 
-# #Simulation starting
-# stat = ns.sim_run(duration=simtime)
+#Simulation starting
+stat = ns.sim_run(duration=simtime)
 
-# #Adding dark count for each Qlient
-# addDarkCounts(Alice.keylist, pdarkworst, int(simtime/GHZ4_time))
-# addDarkCounts(Bob.keylist, pdarkworst, int(simtime/GHZ4_time))
-# addDarkCounts(Charlie.keylist, pdarkbest, int(simtime/GHZ4_time))
-# addDarkCounts(Dina.keylist, pdarkbest, int(simtime/GHZ4_time))
+#Adding dark count for each Qlient
+addDarkCounts(Alice.keylist, pdarkworst, int(simtime/GHZ4_time))
+addDarkCounts(Bob.keylist, pdarkworst, int(simtime/GHZ4_time))
+addDarkCounts(Charlie.keylist, pdarkbest, int(simtime/GHZ4_time))
+addDarkCounts(Dina.keylist, pdarkbest, int(simtime/GHZ4_time))
 
-# #Sifting to keep the qubit from the same GHZ state
-# Lres=Sifting4(Alice.keylist,Bob.keylist,Charlie.keylist,Dina.keylist)
+#Sifting to keep the qubit from the same GHZ state
+Lres=Sifting4(Alice.keylist,Bob.keylist,Charlie.keylist,Dina.keylist)
 
+print("Number of qubits received by the four Qlients: " +str(len(Lres)) )
+print("GHZ4 sharing rate : " + str(len(Lres)/(simtime*1e-9))+" GHZ4 per second")
 
-
-# print("Number of qubits received by the four Qlients: " +str(len(Lres)) )
-# print("GHZ4 sharing rate : " + str(len(Lres)/(simtime*1e-9))+" GHZ4 per second")
-
-# print("QBER : "+str(estimQBERGHZ4(Lres)))
+print("QBER : "+str(estimQBERGHZ4(Lres)))
 
