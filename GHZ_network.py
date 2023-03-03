@@ -8,13 +8,15 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import networkx as nx
+import netsquid as ns
+
 from QEuropeFunctions import *
 import quantum_networks_functions as qnf
 
 plt.rcParams['text.usetex'] = True
 
 # Simulation time
-simtime = 100000
+simtime = 1e5
 
 ns.sim_reset()
 # Creation of a network instance
@@ -25,7 +27,7 @@ q = "Qonnector 1"
 net2.Add_Qonnector(q)
 
 # Nodes
-N_nodes = 5 # Number of nodes
+N_nodes = 4 # Number of nodes
 
 #%%
 class Node:
@@ -46,6 +48,8 @@ for n in range(N_nodes):
 #%%
 # Visualisation of the network.
 
+plt.close('all')
+
 G = nx.Graph()
 
 elist = []
@@ -60,7 +64,7 @@ colours = []
 for k in nodes.keys():
     colours.append(nodes[k].dist) # Value map for the colouring of the nodes.
 
-cmap=plt.cm.summer
+cmap=plt.cm.coolwarm
 
 node_positions = {} # pos (dict or None optional (default=None)) – Initial positions for nodes as a dictionary with node as keys and values as a coordinate list or tuple. If None, then use random initial positions.
 for k in nodes.keys():
@@ -85,47 +89,36 @@ net = net2.network
 
 Qonnector = net.get_node(q)
 
-Alice = net.get_node("node_1")
-Bob = net.get_node("node_2")
-Charlie = net.get_node("node_3")
-Dina = net.get_node("node_4")
-
-Alice.keylist=[]
-Bob.keylist=[]
-Charlie.keylist=[]
-Dina.keylist=[]
+Qlients = []
+for n in range(N_nodes):
+    Qlients.append(net.get_node("node_%d"%n))
+    Qlients[n].keylist=[]
 
 # Initialisation of the protocol
-ghzprotocol = SendGHZ4(Alice, Bob, Charlie, Dina, GHZ4_succ, Qonnector)
+
+ghzprotocol = qnf.send_ghz(Qlients, GHZ4_succ, Qonnector)
+# ghzprotocol = qnf.send_ghz(Qlients[0], Qlients[1], Qlients[2], Qlients[3], GHZ4_succ, Qonnector)
+# ghzprotocol = SendGHZ4(Qlients[0], Qlients[1], Qlients[2], Qlients[3], GHZ4_succ, Qonnector)
 
 ghzprotocol.start()
 
-protocolA = ReceiveProtocol(Qonnector, Qlient_meas_succ, Qlient_meas_flip, False, Alice)
-protocolA.start()
-
-protocolB = ReceiveProtocol(Qonnector, Qlient_meas_succ, Qlient_meas_flip, False, Bob)
-protocolB.start()
-
-protocolC = ReceiveProtocol(Qonnector, Qlient_meas_succ, Qlient_meas_flip, False, Charlie)
-protocolC.start() 
-        
-protocolD = ReceiveProtocol(Qonnector, Qlient_meas_succ, Qlient_meas_flip,False, Dina)
-protocolD.start()
+protocols = []
+for n in range(N_nodes):
+    protocols.append(ReceiveProtocol(Qonnector, Qlient_meas_succ, Qlient_meas_flip, False, Qlients[n]))
+    protocols[n].start()
 
 #Simulation starting
 stat = ns.sim_run(duration=simtime)
 
 #Adding dark count for each Qlient
-addDarkCounts(Alice.keylist, pdarkworst, int(simtime/GHZ4_time))
-addDarkCounts(Bob.keylist, pdarkworst, int(simtime/GHZ4_time))
-addDarkCounts(Charlie.keylist, pdarkbest, int(simtime/GHZ4_time))
-addDarkCounts(Dina.keylist, pdarkbest, int(simtime/GHZ4_time))
+for n in range(N_nodes):
+    addDarkCounts(Qlients[n].keylist, pdarkworst, int(simtime/GHZ4_time))
+
 
 #Sifting to keep the qubit from the same GHZ state
-Lres=Sifting4(Alice.keylist,Bob.keylist,Charlie.keylist,Dina.keylist)
+Lres=Sifting4(Qlients[0].keylist, Qlients[1].keylist, Qlients[2].keylist, Qlients[3].keylist)
 
 print("Number of qubits received by the four Qlients: " +str(len(Lres)) )
 print("GHZ4 sharing rate : " + str(len(Lres)/(simtime*1e-9))+" GHZ4 per second")
 
 print("QBER : "+str(estimQBERGHZ4(Lres)))
-
