@@ -16,7 +16,7 @@ import quantum_networks_functions as qnf
 plt.rcParams['text.usetex'] = True
 
 # Simulation time
-simtime = 1e5
+simtime = 2e5
 
 ns.sim_reset()
 # Creation of a network instance
@@ -27,8 +27,8 @@ q = "Qonnector 1"
 net2.Add_Qonnector(q)
 
 # Nodes
-N_nodes = 4 # Number of nodes
-
+N_nodes = 5 # Number of nodes
+SIFTING = True # TO BE REMOVED ONCE IT'S GENERALISED TO N NODES.
 #%%
 class Node:
     def __init__(self, node_name, dist_to_Qonnector, node_type):
@@ -116,9 +116,15 @@ for n in range(N_nodes):
 
 
 #Sifting to keep the qubit from the same GHZ state
-Lres=Sifting4(Qlients[0].keylist, Qlients[1].keylist, Qlients[2].keylist, Qlients[3].keylist)
-
-print("Number of qubits received by the four Qlients: " +str(len(Lres)) )
-print("GHZ4 sharing rate : " + str(len(Lres)/(simtime*1e-9))+" GHZ4 per second")
-
-print("QBER : "+str(estimQBERGHZ4(Lres)))
+if SIFTING:
+    if N_nodes==3:
+        Lres = Sifting3(Qlients[0].keylist, Qlients[1].keylist, Qlients[2].keylist)
+    elif N_nodes==4:
+        Lres = Sifting4(Qlients[0].keylist, Qlients[1].keylist, Qlients[2].keylist, Qlients[3].keylist)
+    elif N_nodes==5:
+        Lres = Sifting5(Qlients[0].keylist, Qlients[1].keylist, Qlients[2].keylist, Qlients[3].keylist, Qlients[4].keylist)
+    
+    print("Number of qubits received by the four Qlients: " +str(len(Lres)) )
+    print("GHZ4 sharing rate : " + str(len(Lres)/(simtime*1e-9))+" GHZ4 per second")
+    
+    print("QBER : " + str(estimQBERGHZ4(Lres)))

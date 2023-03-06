@@ -83,22 +83,24 @@ class send_ghz(ns.protocols.NodeProtocol):
         super().__init__(node=node, name=name)
         self._GHZ_succ = GHZ4_succ
         self._Qlients = Qlients
+        # for n in range(N_nodes):
+        #   self._Qlient_1 = Qlients[0]
         self._Qlient_1 = Qlients[0]
         self._Qlient_2 = Qlients[1]
         self._Qlient_3 = Qlients[2]
-        self._Qlient_4 = Qlients[3]
+        # self._Qlient_4 = Qlients[3]
         
     def run(self):
         memories = []
         for n in range(N_nodes):
             memories.append(self.node.subcomponents["QonnectorMemoryTo{}".format(self._Qlients[n].name)])
-        mem1 = self.node.subcomponents["QonnectorMemoryTo{}".format(self._Qlient_1.name)]
-        mem2 = self.node.subcomponents["QonnectorMemoryTo{}".format(self._Qlient_2.name)]
-        mem3 = self.node.subcomponents["QonnectorMemoryTo{}".format(self._Qlient_3.name)]
-        mem4 = self.node.subcomponents["QonnectorMemoryTo{}".format(self._Qlient_4.name)]
         
-        GHZmem = ns.components.qprocessor.QuantumProcessor("QonnectorGHZMemory", num_positions=4,
-                                fallback_to_nonphysical=True)
+        # mem1 = self.node.subcomponents["QonnectorMemoryTo{}".format(self._Qlient_1.name)]
+        # mem2 = self.node.subcomponents["QonnectorMemoryTo{}".format(self._Qlient_2.name)]
+        # mem3 = self.node.subcomponents["QonnectorMemoryTo{}".format(self._Qlient_3.name)]
+        # mem4 = self.node.subcomponents["QonnectorMemoryTo{}".format(self._Qlient_4.name)]
+        
+        GHZmem = ns.components.qprocessor.QuantumProcessor("QonnectorGHZMemory", num_positions = N_nodes, fallback_to_nonphysical=True)
         self.node.add_subcomponent(GHZmem)
         
         
@@ -124,11 +126,12 @@ class send_ghz(ns.protocols.NodeProtocol):
         self.node.add_subcomponent(qsource)
         clock.ports["cout"].connect(qsource.ports["trigger"])
 
-        
-        qsource.ports["qout0"].connect(GHZmem.ports["qin0"])
-        qsource.ports["qout1"].connect(GHZmem.ports["qin1"])
-        qsource.ports["qout2"].connect(GHZmem.ports["qin2"])
-        qsource.ports["qout3"].connect(GHZmem.ports["qin3"])
+        for n in range(N_nodes):
+            qsource.ports["qout%d"%n].connect(GHZmem.ports["qin%d"%n])
+        # qsource.ports["qout0"].connect(GHZmem.ports["qin0"])
+        # qsource.ports["qout1"].connect(GHZmem.ports["qin1"])
+        # qsource.ports["qout2"].connect(GHZmem.ports["qin2"])
+        # qsource.ports["qout3"].connect(GHZmem.ports["qin3"])
         clock.start()
         
         def route_qubits(msg):
@@ -146,26 +149,28 @@ class send_ghz(ns.protocols.NodeProtocol):
         
         while True:
             yield self.await_port_input(GHZmem.ports["qin0"])
-            
-            GHZmem.pop([0], skip_noise=True, meta_data={'internal':mem1})
-            GHZmem.pop([1], skip_noise=True, meta_data={'internal':mem2})
-            GHZmem.pop([2], skip_noise=True, meta_data={'internal':mem3})
-            GHZmem.pop([3], skip_noise=True, meta_data={'internal':mem4})
+            for n in range(N_nodes):
+                GHZmem.pop([n], skip_noise=True, meta_data={'internal':memories[n]})
+            # GHZmem.pop([1], skip_noise=True, meta_data={'internal':mem2})
+            # GHZmem.pop([2], skip_noise=True, meta_data={'internal':mem3})
+            # GHZmem.pop([3], skip_noise=True, meta_data={'internal':mem4})
 
             
             b = sp.stats.bernoulli.rvs(self._GHZ_succ)
             if b == 1:
-                mem1.pop([0])
-                self.node.ports["cout_{}".format(self._Qlient_1.name)].tx_output(clock.num_ticks)
-                mem2.pop([0])
-                self.node.ports["cout_{}".format(self._Qlient_2.name)].tx_output(clock.num_ticks)
-                mem3.pop([0])
-                self.node.ports["cout_{}".format(self._Qlient_3.name)].tx_output(clock.num_ticks)
-                mem4.pop([0])
-                self.node.ports["cout_{}".format(self._Qlient_4.name)].tx_output(clock.num_ticks)
+                for n in range(N_nodes):
+                    memories[n].pop([0])
+                    self.node.ports["cout_{}".format(self._Qlients[n].name)].tx_output(clock.num_ticks)
+                # mem2.pop([0])
+                # self.node.ports["cout_{}".format(self._Qlient_2.name)].tx_output(clock.num_ticks)
+                # mem3.pop([0])
+                # self.node.ports["cout_{}".format(self._Qlient_3.name)].tx_output(clock.num_ticks)
+                # mem4.pop([0])
+                # self.node.ports["cout_{}".format(self._Qlient_4.name)].tx_output(clock.num_ticks)
             
             GHZmem.reset()
-            mem1.reset()
-            mem2.reset()
-            mem3.reset()
-            mem4.reset()
+            for n in range(N_nodes):
+                memories[n].reset()
+            # mem2.reset()
+            # mem3.reset()
+            # mem4.reset()
