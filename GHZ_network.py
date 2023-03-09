@@ -27,7 +27,8 @@ q = "Qonnector 1"
 net2.Add_Qonnector(q)
 
 # Nodes
-N_nodes = 5 # Number of nodes
+N_nodes = 4 # Number of nodes
+DRAW_NETWORK = False
 SIFTING = True # TO BE REMOVED ONCE IT'S GENERALISED TO N NODES.
 #%%
 class Node:
@@ -48,37 +49,38 @@ for n in range(N_nodes):
 #%%
 # Visualisation of the network.
 
-plt.close('all')
-
-G = nx.Graph()
-
-elist = []
-
-# Adding edges between the nodes and the Qonnector
-for n in range(N_nodes):
-    elist.append((str(n), q))
-
-G.add_edges_from(elist)
-
-colours = []
-for k in nodes.keys():
-    colours.append(nodes[k].dist) # Value map for the colouring of the nodes.
-
-cmap=plt.cm.coolwarm
-
-node_positions = {} # pos (dict or None optional (default=None)) – Initial positions for nodes as a dictionary with node as keys and values as a coordinate list or tuple. If None, then use random initial positions.
-for k in nodes.keys():
-    node_positions[k] = (np.sqrt(nodes[k].dist), np.sqrt(nodes[k].dist))
-
-nx.draw(G, cmap=cmap, node_color=colours, with_labels=True, font_color='black', verticalalignment='center', horizontalalignment='center')
-
-
-sm = plt.cm.ScalarMappable(cmap=cmap)#, norm=plt.Normalize(vmin = vmin, vmax=vmax))
-sm._A = []
-plt.colorbar(sm, orientation='vertical', shrink=0.8, label=r'Distance to Qonnector')
-
-
-plt.show()
+if DRAW_NETWORK:
+    plt.close('all')
+    
+    G = nx.Graph()
+    
+    elist = []
+    
+    # Adding edges between the nodes and the Qonnector
+    for n in range(N_nodes):
+        elist.append((str(n), q))
+    
+    G.add_edges_from(elist)
+    
+    colours = []
+    for k in nodes.keys():
+        colours.append(nodes[k].dist) # Value map for the colouring of the nodes.
+    
+    cmap=plt.cm.coolwarm
+    
+    node_positions = {} # pos (dict or None optional (default=None)) – Initial positions for nodes as a dictionary with node as keys and values as a coordinate list or tuple. If None, then use random initial positions.
+    for k in nodes.keys():
+        node_positions[k] = (np.sqrt(nodes[k].dist), np.sqrt(nodes[k].dist))
+    
+    nx.draw(G, cmap=cmap, node_color=colours, with_labels=True, font_color='black', verticalalignment='center', horizontalalignment='center')
+    
+    
+    sm = plt.cm.ScalarMappable(cmap=cmap)#, norm=plt.Normalize(vmin = vmin, vmax=vmax))
+    sm._A = []
+    plt.colorbar(sm, orientation='vertical', shrink=0.8, label=r'Distance to Qonnector')
+    
+    
+    plt.show()
 
 #%%
 

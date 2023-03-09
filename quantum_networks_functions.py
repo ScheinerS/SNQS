@@ -174,3 +174,39 @@ class send_ghz(ns.protocols.NodeProtocol):
             # mem2.reset()
             # mem3.reset()
             # mem4.reset()
+
+
+#%%
+def Sifting4(L1,L2,L3,L4):
+    """Sifting Function to get a list of matching received qubit between 4 people (typically after a GHZ4 sharing)""" 
+    Lres = []
+    for i in range(len(L1)):
+        ta, ma = L1[i]
+        for j in range(len(L2)):
+            tb, mb = L2[j]
+            if ta == tb:
+                for k in range(len(L3)):
+                    tc, mc = L3[k]
+                    if tb == tc:
+                        for l in range(len(L4)):
+                            td, md = L4[l]
+                            if td == tc:
+                                Lres.append((ma,mb,mc,md))  
+    return Lres
+
+#%%
+'''
+L1 = Qlients[0].keylist
+L2 = Qlients[1].keylist
+L3 = Qlients[2].keylist
+L4 = Qlients[3].keylist
+
+print(L1)
+print(L2)
+print(L3)
+print(L4)
+
+Lres = Sifting4(L1,L2,L3,L4)
+
+print(Lres)
+'''
