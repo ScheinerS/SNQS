@@ -547,7 +547,7 @@ class QEurope():
             Satellite.QlientList.append(Qonnector1)
             Satellite.QlientPorts[Qonnector1] = [Sat1_send]
             Satellite.QlientKeys[Qonnector1] = []
-        
+
             Qonn1.QlientList.append(Satellite.name)
             Qonn1.QlientPorts[Satellite.name] = [Qonn1_send,Qonn1_receive]
             Qonn1.QlientKeys[Satellite.name] = []

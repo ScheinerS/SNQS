@@ -6,30 +6,39 @@
 # PLOT = 0
 
 import numpy as np
+import netsquid as ns
+import pandas as pd
 import matplotlib.pyplot as plt
 import networkx as nx
-import netsquid as ns
 
-from QEuropeFunctions import *
+# from QEuropeFunctions import *
+import QEuropeFunctions as qe
 import quantum_networks_functions as qnf
 
 plt.rcParams['text.usetex'] = True
 
 # Simulation time
-simtime = 2e5
+
 
 ns.sim_reset()
 # Creation of a network instance
-net2 = QEurope("net")
+net2 = qe.QEurope("net")
 
 # Qonnector
 q = "Qonnector 1"
 net2.Add_Qonnector(q)
 
-# Nodes
-N_nodes = 4 # Number of nodes
-DRAW_NETWORK = False
-SIFTING = True # TO BE REMOVED ONCE IT'S GENERALISED TO N NODES.
+DRAW_NETWORK = 0
+SIFTING = 1 # TO BE REMOVED ONCE IT'S GENERALISED TO N NODES.
+
+#%%
+
+P = pd.read_csv('parameters.csv', header=0)
+P['value'] = pd.to_numeric(P['value'], downcast='integer', errors='ignore')
+parameters = dict(zip(P['parameter'], P['value']))
+
+N_nodes = int(parameters['N_nodes'])
+
 #%%
 class Node:
     def __init__(self, node_name, dist_to_Qonnector, node_type):
@@ -42,51 +51,31 @@ nodes = {}
 nodes[q] = Node(q, 0, 'Qonnector') # Qonnector.
 
 for n in range(N_nodes):
-    nodes[n] = Node('node_%s'%str(n), n/10, 'node') # distances d=10*n, for now.
+    nodes[n] = Node('node_%s'%str(n), n, 'node') # distances d=n, for now.
     
     net2.Add_Qlient(nodes[n].name, nodes[n].dist, q) # Connections between the parties and the Qonnector
 
 #%%
 # Visualisation of the network.
 
+G = nx.Graph()
+
+elist = []
+
+# Adding edges between the nodes and the Qonnector
+for n in range(N_nodes):
+    elist.append((str(n), q))
+
+G.add_edges_from(elist)
+
 if DRAW_NETWORK:
-    plt.close('all')
-    
-    G = nx.Graph()
-    
-    elist = []
-    
-    # Adding edges between the nodes and the Qonnector
-    for n in range(N_nodes):
-        elist.append((str(n), q))
-    
-    G.add_edges_from(elist)
-    
-    colours = []
-    for k in nodes.keys():
-        colours.append(nodes[k].dist) # Value map for the colouring of the nodes.
-    
-    cmap=plt.cm.coolwarm
-    
-    node_positions = {} # pos (dict or None optional (default=None)) – Initial positions for nodes as a dictionary with node as keys and values as a coordinate list or tuple. If None, then use random initial positions.
-    for k in nodes.keys():
-        node_positions[k] = (np.sqrt(nodes[k].dist), np.sqrt(nodes[k].dist))
-    
-    nx.draw(G, cmap=cmap, node_color=colours, with_labels=True, font_color='black', verticalalignment='center', horizontalalignment='center')
-    
-    
-    sm = plt.cm.ScalarMappable(cmap=cmap)#, norm=plt.Normalize(vmin = vmin, vmax=vmax))
-    sm._A = []
-    plt.colorbar(sm, orientation='vertical', shrink=0.8, label=r'Distance to Qonnector')
-    
-    
-    plt.show()
+    qnf.draw_network(G, nodes)
 
 #%%
 
 # Here starts the GHZ distribution protocol. For now, it works only for four nodes.
 
-#Initialisation of the nodes
+# Initialisation of the nodes
 net = net2.network
 
 Qonnector = net.get_node(q)
@@ -98,35 +87,53 @@ for n in range(N_nodes):
 
 # Initialisation of the protocol
 
-ghzprotocol = qnf.send_ghz(Qlients, GHZ4_succ, Qonnector)
-# ghzprotocol = qnf.send_ghz(Qlients[0], Qlients[1], Qlients[2], Qlients[3], GHZ4_succ, Qonnector)
-# ghzprotocol = SendGHZ4(Qlients[0], Qlients[1], Qlients[2], Qlients[3], GHZ4_succ, Qonnector)
+ghzprotocol = qnf.send_ghz(Qlients, parameters, Qonnector)
 
 ghzprotocol.start()
 
 protocols = []
 for n in range(N_nodes):
-    protocols.append(ReceiveProtocol(Qonnector, Qlient_meas_succ, Qlient_meas_flip, False, Qlients[n]))
+    protocols.append(qe.ReceiveProtocol(Qonnector, qe.Qlient_meas_succ, qe.Qlient_meas_flip, False, Qlients[n]))
     protocols[n].start()
 
 #Simulation starting
-stat = ns.sim_run(duration=simtime)
+stat = ns.sim_run(duration=parameters['simtime'])
 
 #Adding dark count for each Qlient
 for n in range(N_nodes):
-    addDarkCounts(Qlients[n].keylist, pdarkworst, int(simtime/GHZ4_time))
+    qe.addDarkCounts(Qlients[n].keylist, parameters['DCRateWorst']*parameters['DetectGateWorst'], int(parameters['simtime']/parameters['ghz_time']))
 
+#%%
+
+# Lists for each node.
+
+LISTS = pd.DataFrame()
+LISTS['time'] = None
+
+for n in range(N_nodes):
+    # n=1
+    col = '%s_measurement'%nodes[n].name
+    LISTS[col] = None
+    df = pd.DataFrame(columns=['time', col])
+    
+    for (time, measurement) in  Qlients[n].keylist:
+        new_line = pd.DataFrame({'time': time, col: [measurement]})
+        df = pd.concat([df, new_line])
+
+    LISTS = LISTS.merge(df, how='outer')
+
+#%%
 
 #Sifting to keep the qubit from the same GHZ state
 if SIFTING:
     if N_nodes==3:
-        Lres = Sifting3(Qlients[0].keylist, Qlients[1].keylist, Qlients[2].keylist)
+        Lres = qe.Sifting3(Qlients[0].keylist, Qlients[1].keylist, Qlients[2].keylist)
     elif N_nodes==4:
-        Lres = Sifting4(Qlients[0].keylist, Qlients[1].keylist, Qlients[2].keylist, Qlients[3].keylist)
+        Lres = qe.Sifting4(Qlients[0].keylist, Qlients[1].keylist, Qlients[2].keylist, Qlients[3].keylist)
     elif N_nodes==5:
-        Lres = Sifting5(Qlients[0].keylist, Qlients[1].keylist, Qlients[2].keylist, Qlients[3].keylist, Qlients[4].keylist)
+        Lres = qe.Sifting5(Qlients[0].keylist, Qlients[1].keylist, Qlients[2].keylist, Qlients[3].keylist, Qlients[4].keylist)
     
-    print("Number of qubits received by the four Qlients: " +str(len(Lres)) )
-    print("GHZ4 sharing rate : " + str(len(Lres)/(simtime*1e-9))+" GHZ4 per second")
+    print("Number of qubits received by the %d Qlients: %d"%(N_nodes, len(Lres)) )
+    print("Sharing rate : " + str(len(Lres)/(parameters['simtime']*1e-9)) +" GHZ states per second")
     
-    print("QBER : " + str(estimQBERGHZ4(Lres)))
+    print("QBER : " + str(qe.estimQBERGHZ4(Lres)))

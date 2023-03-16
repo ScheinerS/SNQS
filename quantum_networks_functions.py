@@ -15,46 +15,29 @@ Created: 2023-03-01
 import numpy as np
 import scipy as sp
 import netsquid as ns
-from pandas import read_csv
+import matplotlib.pyplot as plt
+import networkx as nx
 
-P = read_csv('parameters.csv', header=0)
-parameters = dict(zip(P['parameter'], P['value']))
+# P = read_csv('parameters.csv', header=0)
+# parameters = dict(zip(P['parameter'], P['value']))
 
-parameters['f_GHZ']
-##############################
-# from ns.components import Channel, QuantumChannel, QuantumMemory, ClassicalChannel
-# from ns.components.models.qerrormodels import FibreLossModel, DepolarNoiseModel, DephaseNoiseModel
-# from ns.nodes import Node, DirectConnection
-# from ns.nodes.connections import Connection
-# from ns.protocols import NodeProtocol
-# from ns.components.models import DelayModel
-# from ns.components.models.delaymodels import FixedDelayModel, FibreDelayModel
-# from ns.components import QuantumMemory
-# from ns.nodes.network import Network
-# from ns.qubits import ketstates as ks
-# from ns.protocols.protocol import Signals
-# from ns.components.qprocessor import PhysicalInstruction
-# from ns.qubits import qubitapi as qapi
-# from ns.components.clock import Clock
-# from ns.qubits.dmtools import DenseDMRepr
+# parameters['f_GHZ']
 
-##############################
+# f_GHZ = 8e6 #GHZ state creation attempt frequency in MHz
 
-f_GHZ = 8e6 #GHZ state creation attempt frequency in MHz
+# # time to create an n-qubit GHZ state
+# ghz_times = {3: np.ceil(1e9/f_GHZ),
+#               4: np.ceil(1e9/f_GHZ),
+#               5: np.ceil(1e9/f_GHZ),                 
+#               }
 
-# time to create an n-qubit GHZ state
-ghz_times = {3: np.ceil(1e9/f_GHZ),
-              4: np.ceil(1e9/f_GHZ),
-              5: np.ceil(1e9/f_GHZ),                 
-              }
-
-ghz_success_prob = {3: 2.5e-3,
-                    4: 3.6e-3,
-                    5: 9e-5,
-                    }
+# ghz_success_prob = {3: 2.5e-3,
+#                     4: 3.6e-3,
+#                     5: 9e-5,
+#                     }
 
 
-N_nodes = 4
+# N_nodes = 4
 
 '''
 # Prueba.
@@ -67,38 +50,24 @@ class send_ghz(ns.protocols.NodeProtocol):
     at a rate GHZ4_time.
     
     Parameters:
-    Qlient_1, Qlient_2, Qlient_3, Qlient_4: name of the Qlients to send the qubits to (str)
-    GHZ4_succ: success probability of creating a 4 qubit GHZ state
+    Qlients: list of the Qlients to send the qubits to (str)
+    GHZ_N_succ: success probability of creating a N-qubit GHZ state
     """
     
-    # def __init__(self, Qlient_1, Qlient_2, Qlient_3, Qlient_4, GHZ4_succ, node = None, name =None):
-    #     super().__init__(node=node, name=name)
-    #     self._GHZ_succ = GHZ4_succ
-    #     self._Qlient_1 = Qlient_1
-    #     self._Qlient_2 = Qlient_2
-    #     self._Qlient_3 = Qlient_3
-    #     self._Qlient_4 = Qlient_4
 
-    def __init__(self, Qlients, GHZ4_succ, node = None, name =None):
+    def __init__(self, Qlients, parameters, node = None, name = None):
         super().__init__(node=node, name=name)
-        self._GHZ_succ = GHZ4_succ
+        self._GHZ_succ = parameters['GHZ4_succ']
         self._Qlients = Qlients
-        # for n in range(N_nodes):
-        #   self._Qlient_1 = Qlients[0]
-        self._Qlient_1 = Qlients[0]
-        self._Qlient_2 = Qlients[1]
-        self._Qlient_3 = Qlients[2]
-        # self._Qlient_4 = Qlients[3]
+        self._parameters = parameters
+        
         
     def run(self):
+        
+        N_nodes = len(self._Qlients)
         memories = []
         for n in range(N_nodes):
             memories.append(self.node.subcomponents["QonnectorMemoryTo{}".format(self._Qlients[n].name)])
-        
-        # mem1 = self.node.subcomponents["QonnectorMemoryTo{}".format(self._Qlient_1.name)]
-        # mem2 = self.node.subcomponents["QonnectorMemoryTo{}".format(self._Qlient_2.name)]
-        # mem3 = self.node.subcomponents["QonnectorMemoryTo{}".format(self._Qlient_3.name)]
-        # mem4 = self.node.subcomponents["QonnectorMemoryTo{}".format(self._Qlient_4.name)]
         
         GHZmem = ns.components.qprocessor.QuantumProcessor("QonnectorGHZMemory", num_positions = N_nodes, fallback_to_nonphysical=True)
         self.node.add_subcomponent(GHZmem)
@@ -109,17 +78,16 @@ class send_ghz(ns.protocols.NodeProtocol):
         
         GHZstate = ns.qubits.dmtools.DenseDMRepr(GHZmatrix)
         
-        state_sampler = ns.qubits.state_sampler.StateSampler(qreprs=[GHZstate],
-                                 probabilities=[1])
+        state_sampler = ns.qubits.state_sampler.StateSampler(qreprs=[GHZstate], probabilities=[1])
         
         qsource = ns.components.qsource.QSource("qsource1",
                           state_sampler=state_sampler,
                           num_ports=4,
-                          timing_model = ns.components.models.delaymodels.FixedDelayModel(delay = ghz_times[N_nodes]),
+                          timing_model = ns.components.models.delaymodels.FixedDelayModel(delay = self._parameters['ghz_time']), # ghz_times[N_nodes]
                           status = ns.components.qsource.SourceStatus.EXTERNAL)
         clock = ns.components.clock.Clock(name="clock1",
                       start_delay=0,
-                      models={"timing_model": ns.components.models.delaymodels.FixedDelayModel(delay = ghz_times[N_nodes])})
+                      models={"timing_model": ns.components.models.delaymodels.FixedDelayModel(delay = self._parameters['ghz_time'])})
         
         
         self.node.add_subcomponent(clock)
@@ -175,6 +143,30 @@ class send_ghz(ns.protocols.NodeProtocol):
             # mem3.reset()
             # mem4.reset()
 
+#%%
+
+def draw_network(G, nodes):
+    plt.close('all')
+    
+    colours = []
+    for k in nodes.keys():
+        colours.append(nodes[k].dist) # Value map for the colouring of the nodes.
+    
+    cmap = plt.cm.coolwarm
+    
+    node_positions = {} # pos (dict or None optional (default=None)) – Initial positions for nodes as a dictionary with node as keys and values as a coordinate list or tuple. If None, then use random initial positions.
+    for k in nodes.keys():
+        node_positions[k] = (np.sqrt(nodes[k].dist), np.sqrt(nodes[k].dist))
+    
+    nx.draw(G, cmap=cmap, node_color=colours, with_labels=True, font_color='black', verticalalignment='center', horizontalalignment='center')
+    
+    
+    sm = plt.cm.ScalarMappable(cmap=cmap)#, norm=plt.Normalize(vmin = vmin, vmax=vmax))
+    sm._A = []
+    plt.colorbar(sm, orientation='vertical', shrink=0.8, label=r'Distance to Qonnector')
+    
+    
+    plt.show()
 
 #%%
 def Sifting4(L1,L2,L3,L4):
@@ -195,6 +187,42 @@ def Sifting4(L1,L2,L3,L4):
     return Lres
 
 #%%
+import pandas as pd
+
+def Sifting(LISTS):
+    
+    """Sifting Function to get a list of matching received qubit between 4 people (typically after a GHZ4 sharing)""" 
+    Lres = []
+    '''
+    LISTS = [L1, L2, L3, L4]
+    '''
+
+    for (time, measurement) in LISTS[0]:
+        print(time)
+        print(measurement)
+        is_in_all_lists = True # It is in all other lists so far.
+        for i in range(1,len(LISTS)):
+            # print(LISTS[i])
+            if time in LISTS[i]:
+                print()
+                #### TERMINAR.
+
+    # for i in range(len(L1)):
+    #     time_a, measurement_a = L1[i]
+    #     for j in range(len(L2)):
+    #         tb, mb = L2[j]
+    #         if ta == tb:
+    #             for k in range(len(L3)):
+    #                 tc, mc = L3[k]
+    #                 if tb == tc:
+    #                     for l in range(len(L4)):
+    #                         td, md = L4[l]
+    #                         if td == tc:
+    #                             Lres.append((ma,mb,mc,md))  
+    # return Lres
+
+#%%
+
 '''
 L1 = Qlients[0].keylist
 L2 = Qlients[1].keylist

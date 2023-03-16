@@ -1,13 +1,15 @@
 parameter,value,description
+N_nodes,4,
+simtime,5.00E+05,
 f_qubit_qlient,80000000,Qubit creation attempt frequency
-Qlient_init_time,math.ceil(1e9/f_qubit_qlient),time to create |0> in a Qlient node in ns
+Qlient_init_time,,time to create |0> in a Qlient node in ns
 Qlient_init_succ,0.008,Probability that a a qubit creation succeed
 Qlient_init_flip,0,probability that a qubit is flipped at its creation
 Qlient_meas_succ,0.95,Probability that a measurement succeeds
-Qlient_meas_flip,1E-05,Probability that the measurement outcome is flipped by the detectors 
-Max_Qlient,5,Number of simultaneous link that the Qonnector can create 
+Qlient_meas_flip,100000,Probability that the measurement outcome is flipped by the detectors 
+Max_Qlient,10,Number of simultaneous link that the Qonnector can create 
 f_qubit_qonn,80000000,Qubit creation attempt frequency in MHz
-Qonnector_init_time,math.ceil(1e9/f_qubit_qonn),time to create |0> in a Qonnector node in ns
+Qonnector_init_time,,time to create |0> in a Qonnector node in ns
 Qonnector_init_succ,0.008,Probability that a qubit creation succeeds
 Qonnector_init_flip,0,
 Qonnector_meas_succ,0.95,Probability that a measurement succeeds
@@ -16,20 +18,16 @@ switch_succ,0.9,probability that transmitting a qubit from a qlient to another s
 BSM_succ,0.9,probability that a Bell state measurement of 2 qubits succeeds
 EPR_succ,0.01,probability that an initialisation of an EPR pair succeeds
 f_EPR,80000000,EPR pair creation attempt frequency in MHz
-EPR_time,math.ceil(1e9/f_EPR), time to create a bell pair in a Qonnector node (ns)
+EPR_time,, time to create a bell pair in a Qonnector node (ns)
 f_GHZ,8000000,GHZ state creation attempt frequency in MHz
-GHZ3_time,math.ceil(1e9/f_GHZ),time to create a GHZ3 state (ns)
 GHZ3_succ,0.0025,probability that creating a GHZ3 state succeeds
-GHZ4_time,math.ceil(1e9/f_GHZ),time to create a GHZ4 state (ns)
 GHZ4_succ,0.0036,probability that creating a GHZ4 state succeeds
-GHZ5_time,math.ceil(1e9/f_GHZ),time to create a GHZ5 state (ns)
 GHZ5_succ,9E-05,probability that creating a GHZ5 state succeeds
 DCRateBest,100,
 DCRateWorst,1000,
 DetectGateBest,1E-10,
 DetectGateWorst,5E-10,
-pdarkbest,DCRateBest*DetectGateBest,
-pdarkworst,DCRateWorst*DetectGateWorst,
 fiber_coupling,0.9,Fiber coupling efficiency
 fiber_loss,0.18,Loss in fiber in dB/km
 fiber_dephasing_rate,0.02,dephasing rate in the fiber (Hz)
+ghz_time,125,time to create a N-qubit GHZ state (ns)
