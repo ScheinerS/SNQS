@@ -110,6 +110,8 @@ for n in range(N_nodes):
 LISTS = pd.DataFrame()
 LISTS['time'] = None
 
+aggregation_functions = {'time': 'first'}
+
 for n in range(N_nodes):
     # n=1
     col = '%s_measurement'%nodes[n].name
@@ -121,7 +123,11 @@ for n in range(N_nodes):
         df = pd.concat([df, new_line])
 
     LISTS = LISTS.merge(df, how='outer')
-
+    
+    aggregation_functions[col] = 'mean' # THIS CAN BE A PROBLEM WHEN WE ADD BIT FLIPPING. IT SHOULD KEEP THE NON-NA IN SOME WAY, NO THE MEAN...
+    
+LISTS = LISTS.groupby(LISTS['time']).aggregate(aggregation_functions)
+LISTS = LISTS.dropna()
 #%%
 
 #Sifting to keep the qubit from the same GHZ state
@@ -133,7 +139,10 @@ if SIFTING:
     elif N_nodes==5:
         Lres = qe.Sifting5(Qlients[0].keylist, Qlients[1].keylist, Qlients[2].keylist, Qlients[3].keylist, Qlients[4].keylist)
     
-    print("Number of qubits received by the %d Qlients: %d"%(N_nodes, len(Lres)) )
-    print("Sharing rate : " + str(len(Lres)/(parameters['simtime']*1e-9)) +" GHZ states per second")
+    print("\nNumber of qubits received by the %d Qlients: %d (NEW FUNCTION)"%(N_nodes, len(LISTS)))
     
-    print("QBER : " + str(qe.estimQBERGHZ4(Lres)))
+    print("Number of qubits received by the %d Qlients: %d (OLD FUNCTION)"%(N_nodes, len(Lres)))
+    print("Sharing rate: " + str(len(Lres)/(parameters['simtime']*1e-9)) +" GHZ states per second")
+    print(Lres)
+    print(LISTS)
+    print("QBER:\t%g"%qe.estimQBERGHZ4(Lres))
