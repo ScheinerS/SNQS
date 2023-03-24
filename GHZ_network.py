@@ -5,17 +5,18 @@
 
 # PLOT = 0
 
+# ctrl + alt + o : optimize imports
+
+import matplotlib.pyplot as plt
 # import numpy as np
 import netsquid as ns
 import pandas as pd
-import matplotlib.pyplot as plt
-import networkx as nx
-
 
 # from QEuropeFunctions import *
 import QEuropeFunctions as qe
-import quantum_networks_functions as qnf
 import aux
+import networkx as nx
+import quantum_networks_functions as qnf
 
 plt.rcParams['text.usetex'] = True
 
@@ -28,14 +29,12 @@ net2 = qe.QEurope("net")
 q = "Qonnector 1"
 net2.Add_Qonnector(q)
 
-flags = {'draw_network': 0,
+flags = {'draw_network': 1,
          'save_parameters': 1,
-         'sifting': 1, # TO BE REMOVED ONCE IT'S GENERALISED TO N NODES.
+         'sifting': 1,  # TO BE REMOVED ONCE IT'S GENERALISED TO N NODES.
          'print_results': 1,
-         'save_results': 1, # NOT USED, YET.
+         'save_results': 1,  # NOT USED, YET.
          }
-
-#%%
 
 P = pd.read_csv('parameters.csv', header=0)
 P['value'] = pd.to_numeric(P['value'], downcast='integer', errors='ignore')
@@ -47,40 +46,38 @@ if flags['save_parameters']:
     directory = 'previous_parameters'
     aux.check_dir(directory)
     aux.save_parameters(directory)
-    
-#%%
+
 class Node:
     def __init__(self, node_name, dist_to_Qonnector, node_type):
         self.name = node_name
         self.dist = dist_to_Qonnector
-        self.type = node_type # processor, etc. Not used yet.
+        self.type = node_type  # processor, etc. Not used yet.
 
-nodes = {}
 
-nodes[q] = Node(q, 0, 'Qonnector') # Qonnector.
+nodes = {q: Node(q, 0, 'Qonnector')}
 
 for n in range(N_nodes):
-    nodes[n] = Node('node_%s'%str(n), n, 'node') # distances d=n, for now.
-    
-    net2.Add_Qlient(nodes[n].name, nodes[n].dist, q) # Connections between the parties and the Qonnector
+    nodes[n] = Node('node_%s' % str(n), n, 'node')  # distances d=n, for now.
 
-#%%
+    net2.Add_Qlient(nodes[n].name, nodes[n].dist, q)  # Connections between the parties and the Qonnector
+
+# %%
 # Visualisation of the network.
 
 if flags['draw_network']:
     G = nx.Graph()
-    
+
     elist = []
-    
+
     # Adding edges between the nodes and the Qonnector
     for n in range(N_nodes):
         elist.append((str(n), q))
-    
+
     G.add_edges_from(elist)
 
     qnf.draw_network(G, nodes)
 
-#%%
+# %%
 
 # Here starts the GHZ distribution protocol. For now, it works only for four nodes.
 
@@ -91,8 +88,8 @@ Qonnector = net.get_node(q)
 
 Qlients = []
 for n in range(N_nodes):
-    Qlients.append(net.get_node("node_%d"%n))
-    Qlients[n].keylist=[]
+    Qlients.append(net.get_node("node_%d" % n))
+    Qlients[n].keylist = []
 
 # Initialisation of the protocol
 
@@ -105,57 +102,57 @@ for n in range(N_nodes):
     protocols.append(qe.ReceiveProtocol(Qonnector, qe.Qlient_meas_succ, qe.Qlient_meas_flip, False, Qlients[n]))
     protocols[n].start()
 
-#Simulation starting
+# Simulation starting
 stat = ns.sim_run(duration=parameters['simtime'])
 
-#Adding dark count for each Qlient
+# Adding dark count for each Qlient
 for n in range(N_nodes):
-    qe.addDarkCounts(Qlients[n].keylist, parameters['DCRateWorst']*parameters['DetectGateWorst'], int(parameters['simtime']/parameters['ghz_time']))
-
-#%%
+    qe.addDarkCounts(Qlients[n].keylist, parameters['DCRateWorst'] * parameters['DetectGateWorst'],
+                     int(parameters['simtime'] / parameters['ghz_time']))
 
 def sifting(N_nodes):
     LISTS = pd.DataFrame()
     LISTS['time'] = None
-    
+
     aggregation_functions = {'time': 'first'}
-    
+
     for n in range(N_nodes):
         # n=1
-        col = '%s_measurement'%nodes[n].name
+        col = '%s_measurement' % nodes[n].name
         LISTS[col] = None
         df = pd.DataFrame(columns=['time', col])
-        
-        for (time, measurement) in  Qlients[n].keylist:
+
+        for (time, measurement) in Qlients[n].keylist:
             new_line = pd.DataFrame({'time': time, col: [measurement]})
             df = pd.concat([df, new_line])
-    
+
         LISTS = LISTS.merge(df, how='outer')
-        
-        aggregation_functions[col] = 'mean' # THIS CAN BE A PROBLEM WHEN WE ADD BIT FLIPPING. IT SHOULD KEEP THE NON-NA IN SOME WAY, NO THE MEAN...
-        
+
+        aggregation_functions[
+            col] = 'mean'  # THIS CAN BE A PROBLEM WHEN WE ADD BIT FLIPPING. IT SHOULD KEEP THE NON-NA IN SOME WAY, NO THE MEAN...
+
     LISTS = LISTS.groupby(LISTS['time']).aggregate(aggregation_functions)
     LISTS = LISTS.dropna()
-    
+
     return LISTS
 
 LISTS = sifting(N_nodes)
-#%%
 
-#Sifting to keep the qubit from the same GHZ state
+# Sifting to keep the qubit from the same GHZ state
 if flags['sifting']:
-    if N_nodes==3:
+    if N_nodes == 3:
         Lres = qe.Sifting3(Qlients[0].keylist, Qlients[1].keylist, Qlients[2].keylist)
-    elif N_nodes==4:
+    elif N_nodes == 4:
         Lres = qe.Sifting4(Qlients[0].keylist, Qlients[1].keylist, Qlients[2].keylist, Qlients[3].keylist)
-    elif N_nodes==5:
-        Lres = qe.Sifting5(Qlients[0].keylist, Qlients[1].keylist, Qlients[2].keylist, Qlients[3].keylist, Qlients[4].keylist)
+    elif N_nodes == 5:
+        Lres = qe.Sifting5(Qlients[0].keylist, Qlients[1].keylist, Qlients[2].keylist, Qlients[3].keylist,
+                           Qlients[4].keylist)
 
 if flags['print_results']:
-    print("\nNumber of qubits received by the %d Qlients: %d (NEW FUNCTION)"%(N_nodes, len(LISTS)))
-    
-    print("Number of qubits received by the %d Qlients: %d (OLD FUNCTION)"%(N_nodes, len(Lres)))
-    print("Sharing rate: " + str(len(Lres)/(parameters['simtime']*1e-9)) +" GHZ states per second")
+    print("\nNumber of qubits received by the %d Qlients: %d (NEW FUNCTION)" % (N_nodes, len(LISTS)))
+
+    print("Number of qubits received by the %d Qlients: %d (OLD FUNCTION)" % (N_nodes, len(Lres)))
+    print("Sharing rate: " + str(len(Lres) / (parameters['simtime'] * 1e-9)) + " GHZ states per second")
     print(Lres)
     print(LISTS)
-    print("QBER:\t%g"%qe.estimQBERGHZ4(Lres))
+    print("QBER:\t%g" % qe.estimQBERGHZ4(Lres))

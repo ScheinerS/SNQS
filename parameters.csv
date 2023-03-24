@@ -1,6 +1,6 @@
 parameter,value,description
 N_nodes,4,
-simtime,5.00E+05,
+simtime,500000,
 f_qubit_qlient,80000000,Qubit creation attempt frequency
 Qlient_init_time,,time to create |0> in a Qlient node in ns
 Qlient_init_succ,0.008,Probability that a a qubit creation succeed
