@@ -189,37 +189,33 @@ def Sifting4(L1,L2,L3,L4):
 #%%
 import pandas as pd
 
-def Sifting(LISTS):
-    
-    """Sifting Function to get a list of matching received qubit between 4 people (typically after a GHZ4 sharing)""" 
-    Lres = []
-    '''
-    LISTS = [L1, L2, L3, L4]
-    '''
+def sifting(nodes):
+    N_nodes = len(nodes)
+    LISTS = pd.DataFrame()
+    LISTS['time'] = None
 
-    for (time, measurement) in LISTS[0]:
-        print(time)
-        print(measurement)
-        is_in_all_lists = True # It is in all other lists so far.
-        for i in range(1,len(LISTS)):
-            # print(LISTS[i])
-            if time in LISTS[i]:
-                print()
-                #### TERMINAR.
+    aggregation_functions = {'time': 'first'}
 
-    # for i in range(len(L1)):
-    #     time_a, measurement_a = L1[i]
-    #     for j in range(len(L2)):
-    #         tb, mb = L2[j]
-    #         if ta == tb:
-    #             for k in range(len(L3)):
-    #                 tc, mc = L3[k]
-    #                 if tb == tc:
-    #                     for l in range(len(L4)):
-    #                         td, md = L4[l]
-    #                         if td == tc:
-    #                             Lres.append((ma,mb,mc,md))  
-    # return Lres
+    for n in range(N_nodes):
+        # n=1
+        col = '%s_measurement' % nodes[n].name
+        LISTS[col] = None
+        df = pd.DataFrame(columns=['time', col])
+
+        for (time, measurement) in Qlients[n].keylist:
+            new_line = pd.DataFrame({'time': time, col: [measurement]})
+            df = pd.concat([df, new_line])
+
+        LISTS = LISTS.merge(df, how='outer')
+
+        aggregation_functions[
+            col] = 'mean'  # THIS CAN BE A PROBLEM WHEN WE ADD BIT FLIPPING. IT SHOULD KEEP THE NON-NA IN SOME WAY, NO THE MEAN...
+
+    LISTS = LISTS.groupby(LISTS['time']).aggregate(aggregation_functions)
+    LISTS = LISTS.dropna()
+
+    return LISTS
+
 
 #%%
 

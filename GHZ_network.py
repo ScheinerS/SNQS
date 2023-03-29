@@ -1,10 +1,5 @@
 #!/usr/bin/env python
 
-# This file creates a local network with one Qonnector and 4 Qlient then simulates the creation and sending of a 4 qubits GHZ state. The qubits received are stored in each Qlient's keylist.
-# The output printed are the number of successful GHZ reception the rate and the QBER.
-
-# PLOT = 0
-
 # ctrl + alt + o : optimize imports
 
 import matplotlib.pyplot as plt
@@ -18,6 +13,7 @@ import aux
 import networkx as nx
 import quantum_networks_functions as qnf
 
+# %%
 plt.rcParams['text.usetex'] = True
 
 ns.sim_reset()
@@ -51,7 +47,7 @@ class Node:
     def __init__(self, node_name, dist_to_Qonnector, node_type):
         self.name = node_name
         self.dist = dist_to_Qonnector
-        self.type = node_type  # processor, etc. Not used yet.
+        self.type = node_type # processor, etc. Not used yet.
 
 
 nodes = {q: Node(q, 0, 'Qonnector')}
@@ -61,8 +57,7 @@ for n in range(N_nodes):
 
     net2.Add_Qlient(nodes[n].name, nodes[n].dist, q)  # Connections between the parties and the Qonnector
 
-# %%
-# Visualisation of the network.
+# %% Visualisation of the network.
 
 if flags['draw_network']:
     G = nx.Graph()
@@ -79,8 +74,6 @@ if flags['draw_network']:
 
 # %%
 
-# Here starts the GHZ distribution protocol. For now, it works only for four nodes.
-
 # Initialisation of the nodes
 net = net2.network
 
@@ -90,8 +83,6 @@ Qlients = []
 for n in range(N_nodes):
     Qlients.append(net.get_node("node_%d" % n))
     Qlients[n].keylist = []
-
-# Initialisation of the protocol
 
 ghzprotocol = qnf.send_ghz(Qlients, parameters, Qonnector)
 
@@ -104,39 +95,14 @@ for n in range(N_nodes):
 
 # Simulation starting
 stat = ns.sim_run(duration=parameters['simtime'])
-
+#%%
 # Adding dark count for each Qlient
 for n in range(N_nodes):
     qe.addDarkCounts(Qlients[n].keylist, parameters['DCRateWorst'] * parameters['DetectGateWorst'],
                      int(parameters['simtime'] / parameters['ghz_time']))
 
-def sifting(N_nodes):
-    LISTS = pd.DataFrame()
-    LISTS['time'] = None
 
-    aggregation_functions = {'time': 'first'}
-
-    for n in range(N_nodes):
-        # n=1
-        col = '%s_measurement' % nodes[n].name
-        LISTS[col] = None
-        df = pd.DataFrame(columns=['time', col])
-
-        for (time, measurement) in Qlients[n].keylist:
-            new_line = pd.DataFrame({'time': time, col: [measurement]})
-            df = pd.concat([df, new_line])
-
-        LISTS = LISTS.merge(df, how='outer')
-
-        aggregation_functions[
-            col] = 'mean'  # THIS CAN BE A PROBLEM WHEN WE ADD BIT FLIPPING. IT SHOULD KEEP THE NON-NA IN SOME WAY, NO THE MEAN...
-
-    LISTS = LISTS.groupby(LISTS['time']).aggregate(aggregation_functions)
-    LISTS = LISTS.dropna()
-
-    return LISTS
-
-LISTS = sifting(N_nodes)
+LISTS = qnf.sifting(nodes)
 
 # Sifting to keep the qubit from the same GHZ state
 if flags['sifting']:
@@ -151,7 +117,7 @@ if flags['sifting']:
 if flags['print_results']:
     print("\nNumber of qubits received by the %d Qlients: %d (NEW FUNCTION)" % (N_nodes, len(LISTS)))
 
-    print("Number of qubits received by the %d Qlients: %d (OLD FUNCTION)" % (N_nodes, len(Lres)))
+    # print("Number of qubits received by the %d Qlients: %d (OLD FUNCTION)" % (N_nodes, len(Lres)))
     print("Sharing rate: " + str(len(Lres) / (parameters['simtime'] * 1e-9)) + " GHZ states per second")
     print(Lres)
     print(LISTS)
