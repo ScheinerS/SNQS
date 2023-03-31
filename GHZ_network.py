@@ -27,7 +27,6 @@ net2.Add_Qonnector(q)
 
 flags = {'draw_network': 1,
          'save_parameters': 1,
-         'sifting': 1,  # TO BE REMOVED ONCE IT'S GENERALISED TO N NODES.
          'print_results': 1,
          'save_results': 1,  # NOT USED, YET.
          }
@@ -95,30 +94,23 @@ for n in range(N_nodes):
 
 # Simulation starting
 stat = ns.sim_run(duration=parameters['simtime'])
-#%%
+
 # Adding dark count for each Qlient
 for n in range(N_nodes):
     qe.addDarkCounts(Qlients[n].keylist, parameters['DCRateWorst'] * parameters['DetectGateWorst'],
                      int(parameters['simtime'] / parameters['ghz_time']))
 
 
-LISTS = qnf.sifting(nodes)
+#%%
+# LISTS = sifting(nodes, Qlients)
+LISTS = qnf.sifting(nodes, Qlients) # Sifting to keep the qubit from the same GHZ state
 
-# Sifting to keep the qubit from the same GHZ state
-if flags['sifting']:
-    if N_nodes == 3:
-        Lres = qe.Sifting3(Qlients[0].keylist, Qlients[1].keylist, Qlients[2].keylist)
-    elif N_nodes == 4:
-        Lres = qe.Sifting4(Qlients[0].keylist, Qlients[1].keylist, Qlients[2].keylist, Qlients[3].keylist)
-    elif N_nodes == 5:
-        Lres = qe.Sifting5(Qlients[0].keylist, Qlients[1].keylist, Qlients[2].keylist, Qlients[3].keylist,
-                           Qlients[4].keylist)
 
 if flags['print_results']:
     print("\nNumber of qubits received by the %d Qlients: %d (NEW FUNCTION)" % (N_nodes, len(LISTS)))
 
     # print("Number of qubits received by the %d Qlients: %d (OLD FUNCTION)" % (N_nodes, len(Lres)))
-    print("Sharing rate: " + str(len(Lres) / (parameters['simtime'] * 1e-9)) + " GHZ states per second")
-    print(Lres)
+    # print("Sharing rate: " + str(len(Lres) / (parameters['simtime'] * 1e-9)) + " GHZ states per second")
+    # print(Lres)
     print(LISTS)
-    print("QBER:\t%g" % qe.estimQBERGHZ4(Lres))
+    # print("QBER:\t%g" % qe.estimQBERGHZ4(Lres))

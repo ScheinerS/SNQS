@@ -183,7 +183,7 @@ class QEurope():
         network = self.network
         # Check that the Qonnector has space for the new qlient
         Qonnector = network.get_node(qonnectorto)
-        if len(Qonnector.QlientList) == Max_Qlient:
+        if len(Qonnector.QlientList) == 'Max_Qlient':
             raise ValueError("You have reached the maximum Qlient capacity for this Qonnector.")
 
         # creates a qlient and adds it to the network
