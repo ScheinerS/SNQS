@@ -17,27 +17,16 @@ import scipy as sp
 import netsquid as ns
 import matplotlib.pyplot as plt
 import networkx as nx
-
-# P = read_csv('parameters.csv', header=0)
-# parameters = dict(zip(P['parameter'], P['value']))
-
-# parameters['f_GHZ']
-
-# f_GHZ = 8e6 #GHZ state creation attempt frequency in MHz
-
-# # time to create an n-qubit GHZ state
-# ghz_times = {3: np.ceil(1e9/f_GHZ),
-#               4: np.ceil(1e9/f_GHZ),
-#               5: np.ceil(1e9/f_GHZ),                 
-#               }
-
 import pandas as pd
+import os
+
+import aux
 
 class send_ghz(ns.protocols.NodeProtocol):
     """
     Protocol performed by a Qonnector to create and send a GHZ4 state to 4 Qlients, each getting one qubit.
-    It creates a processor called QonnectorGHZMemory where GHZ states are created with probability GHZ4_succ
-    at a rate GHZ4_time.
+    It creates a processor called QonnectorGHZMemory where GHZ states are created with probability ghz_succ
+    at a rate ghz_succ.
     
     Parameters:
     Qlients: list of the Qlients to send the qubits to (str)
@@ -46,7 +35,7 @@ class send_ghz(ns.protocols.NodeProtocol):
     
     def __init__(self, Qlients, parameters, node = None, name = None):
         super().__init__(node=node, name=name)
-        self._GHZ_succ = parameters['GHZ4_succ']
+        self._GHZ_succ = parameters['ghz_succ']
         self._Qlients = Qlients
         self._parameters = parameters
         
@@ -140,9 +129,15 @@ def draw_network(G, nodes):
     
     cmap = plt.cm.coolwarm
     
-    node_positions = {} # pos (dict or None optional (default=None)) – Initial positions for nodes as a dictionary with node as keys and values as a coordinate list or tuple. If None, then use random initial positions.
-    for k in nodes.keys():
-        node_positions[k] = (np.sqrt(nodes[k].dist), np.sqrt(nodes[k].dist))
+    # node_positions = {} # pos (dict or None optional (default=None)) – Initial positions for nodes as a dictionary with node as keys and values as a coordinate list or tuple. If None, then use random initial positions.
+    # for k in nodes.keys():
+    #     node_positions[k] = (np.sqrt(nodes[k].dist), np.sqrt(nodes[k].dist))
+    
+    # weights = {}
+    # for n in range(len(nodes)-1):
+    #     weights[nodes[n].name] = nodes[n].dist
+        
+    # pos = nx.spring_layout(G, k=None, pos=None, fixed=None, iterations=50, threshold=0.0001, weight=None, scale=1, center=None, dim=2, seed=None)
     
     nx.draw(G, cmap=cmap, node_color=colours, with_labels=True, font_color='black', verticalalignment='center', horizontalalignment='center')
     
@@ -151,9 +146,10 @@ def draw_network(G, nodes):
     sm._A = []
     plt.colorbar(sm, orientation='vertical', shrink=0.8, label=r'Distance to Qonnector')
     
-    
     plt.show()
-
+    save_dir = 'plots'
+    aux.check_dir(save_dir)
+    plt.savefig(save_dir + os.sep + 'graph_N=%d.png'%(len(nodes)-1))
 #%%
 def sifting(nodes, Qlients):
     LISTS = pd.DataFrame()
@@ -162,7 +158,7 @@ def sifting(nodes, Qlients):
     aggregation_functions = {'time': 'first'}
 
     for n in range(len(Qlients)):
-        print('KEY: ', n)
+        print('\rKEY: %d'%n, end='')
         col = '%s_measurement' % nodes[n].name
         LISTS[col] = None
         df = pd.DataFrame(columns=['time', col])
@@ -170,7 +166,7 @@ def sifting(nodes, Qlients):
         for (time, measurement) in Qlients[n].keylist:
             new_line = pd.DataFrame({'time': time, col: [measurement]})
             df = pd.concat([df, new_line])
-
+            
         LISTS = LISTS.merge(df, how='outer')
 
         aggregation_functions[col] = 'mean' # THIS CAN BE A PROBLEM WHEN WE ADD BIT FLIPPING. IT SHOULD KEEP THE NON-NA IN SOME WAY, NO THE MEAN...

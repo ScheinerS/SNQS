@@ -28,7 +28,7 @@ net2.Add_Qonnector(q)
 flags = {'draw_network': 1,
          'save_parameters': 1,
          'print_results': 1,
-         'save_results': 1,  # NOT USED, YET.
+         'save_results': 0,
          }
 
 P = pd.read_csv('parameters.csv', header=0)
@@ -101,16 +101,19 @@ for n in range(N_nodes):
                      int(parameters['simtime'] / parameters['ghz_time']))
 
 
-#%%
-# LISTS = sifting(nodes, Qlients)
+#%% Sifting.
+
 LISTS = qnf.sifting(nodes, Qlients) # Sifting to keep the qubit from the same GHZ state
 
 
 if flags['print_results']:
-    print("\nNumber of qubits received by the %d Qlients: %d (NEW FUNCTION)" % (N_nodes, len(LISTS)))
+    print("\nNumber of qubits received by the %d Qlients: %d" % (N_nodes, len(LISTS)))
 
     # print("Number of qubits received by the %d Qlients: %d (OLD FUNCTION)" % (N_nodes, len(Lres)))
     # print("Sharing rate: " + str(len(Lres) / (parameters['simtime'] * 1e-9)) + " GHZ states per second")
     # print(Lres)
     print(LISTS)
     # print("QBER:\t%g" % qe.estimQBERGHZ4(Lres))
+
+if flags['save_results']:
+    print('TODO: save_results')
