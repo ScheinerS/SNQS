@@ -27,9 +27,9 @@ net2 = qe.QEurope("net")
 q = "Qonnector 1"
 net2.Add_Qonnector(q)
 
-flags = {'draw_network': 1,
+flags = {'draw_network': 0,
          'print_parameters': 1,
-         'save_parameters': 1,
+         'save_parameters': 0,
          'print_lists': 1,
          'save_results': 0,
          'runtimes': 0,
@@ -113,7 +113,6 @@ for n in range(N_nodes):
     qe.addDarkCounts(Qlients[n].keylist, parameters['DCRateWorst'] * parameters['DetectGateWorst'],
                      int(parameters['simtime'] / parameters['ghz_time']))
 
-
 #%% Sifting.
 
 LISTS = qnf.sifting(nodes, Qlients) # Sifting to keep the qubit from the same GHZ state
@@ -122,7 +121,6 @@ LISTS = qnf.sifting(nodes, Qlients) # Sifting to keep the qubit from the same GH
 if flags['print_lists']:
     print("\nNumber of qubits received by the %d Qlients: %d" % (N_nodes, len(LISTS)))
 
-    # print("Sharing rate: " + str(len(Lres) / (parameters['simtime'] * 1e-9)) + " GHZ states per second")
     print(LISTS)
     # print("QBER:\t%g" % qe.estimQBERGHZ4(Lres))
 

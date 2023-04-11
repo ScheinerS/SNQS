@@ -86,7 +86,8 @@ class send_ghz(ns.protocols.NodeProtocol):
                     raise ValueError("Can't internally route to a quantummemory that is not a subcomponent.")
                 target.ports['qin'].tx_input(msg)
             else:
-                self.node.ports[Qonn_send].tx_output(msg)
+                # self.node.ports[Qonn_send].tx_output(msg)
+                print('\n\nCHECK "ROUTE_QUBITS()" FUNCTION.')   # TODO: fix this momentary exception.
         
         GHZmem.ports['qout'].bind_output_handler(route_qubits)
             
@@ -139,6 +140,7 @@ def draw_network(G, nodes):
     save_dir = 'plots'
     aux.check_dir(save_dir)
     plt.savefig(save_dir + os.sep + 'graph_N=%d.png'%(len(nodes)-1))
+
 #%%
 def sifting(nodes, Qlients):
     LISTS = pd.DataFrame()
@@ -158,13 +160,90 @@ def sifting(nodes, Qlients):
             
         LISTS = LISTS.merge(df, how='outer')
 
-        aggregation_functions[col] = 'mean' # THIS CAN BE A PROBLEM WHEN WE ADD BIT FLIPPING. IT SHOULD KEEP THE NON-NA IN SOME WAY, NO THE MEAN...
+        aggregation_functions[col] = 'mean' # THIS CAN BE A PROBLEM WHEN WE ADD BIT FLIPPING. IT SHOULD KEEP THE NON-NA IN SOME WAY, NOT THE MEAN...
 
     LISTS = LISTS.groupby(LISTS['time']).aggregate(aggregation_functions)
     LISTS = LISTS.dropna()
 
     return LISTS
 
+#%%
+
+# TODO: delete following block
+import netsquid.components.instructions as instr
+from netsquid.components.qprocessor import PhysicalInstruction
+from netsquid.components.qprocessor import QuantumProcessor
+
+f_qubit_qlient = 80e6  # Qubit creation attempt frequency
+Qlient_init_time = np.ceil(1e9 / f_qubit_qlient)  # time to create |0> in a Qlient node in ns
+
+# Network parameter
+fiber_coupling = 0.9  # Fiber coupling efficiency
+fiber_loss = 0.18  # Loss in fiber in dB/km
+fiber_dephasing_rate = 0.02  # dephasing rate in the fiber (Hz)
+
+#%%
+
+# Quantum operations accessible to the Qonnectors
+qonnector_physical_instructions = [
+    PhysicalInstruction(instr.INSTR_INIT, duration = Qlient_init_time),
+    PhysicalInstruction(instr.INSTR_H, duration=1, parallel=True, topology=[0]),
+    PhysicalInstruction(instr.INSTR_X, duration=1, parallel=True, topology=[0]),
+    PhysicalInstruction(instr.INSTR_Z, duration=1, parallel=True, topology=[0]),
+    PhysicalInstruction(instr.INSTR_S, duration=1, parallel=True, topology=[0]),
+    PhysicalInstruction(instr.INSTR_I, duration=1, parallel=True, topology=[0]),
+    PhysicalInstruction(instr.INSTR_CNOT, duration=4, parallel=True),
+    PhysicalInstruction(instr.INSTR_MEASURE, duration=1, parallel=True, topology=[0, 1]),
+    PhysicalInstruction(instr.INSTR_MEASURE_BELL, duration=1, parallel=True),
+    PhysicalInstruction(instr.INSTR_SWAP, duration=1, parallel=True)
+]
+
+# Quantum operations accessible to the Qlient
+qlient_physical_instructions = [
+    PhysicalInstruction(instr.INSTR_INIT, duration = Qlient_init_time),
+    PhysicalInstruction(instr.INSTR_H, duration=1, parallel=True, topology=[0]),
+    PhysicalInstruction(instr.INSTR_X, duration=1, parallel=True, topology=[0]),
+    PhysicalInstruction(instr.INSTR_Z, duration=1, parallel=True, topology=[0]),
+    PhysicalInstruction(instr.INSTR_S, duration=1, parallel=True, topology=[0]),
+    PhysicalInstruction(instr.INSTR_I, duration=1, parallel=True, topology=[0]),
+    PhysicalInstruction(instr.INSTR_MEASURE, duration=1, parallel=False, topology=[0])
+]
+
+
+class Qlient_node(ns.nodes.Node):
+    """A Qlient node
+    
+    Parameters:
+    name: name of the Qlient
+    phys_instruction: list of physical instructions for the Qlient
+    keylist: list of bits for QKD
+    ports: list of two ports: one to send to Qonnector and one to receive
+    """
+
+    def __init__(self, name, phys_instruction, keylist=None, listports=None):
+        super().__init__(name=name)
+        qmem = ns.components.qprocessor.QuantumProcessor("QlientMemory{}".format(name), num_positions=1,
+                                phys_instructions=phys_instruction)
+        self.qmemory = qmem
+        self.keylist = keylist
+        self.listports = listports
+
+
+class Qonnector_node(ns.nodes.Node):
+    """A Qonnector node
+    
+    Parameters:
+    QlientList: List of connected Qlients
+    QlientPorts: Dictionnary of the form {Qlient: [port_to_send, port_to_receive]}
+    QlientKeys : Dictionnary for QKD of the form {Qlient: [key]}
+    """
+
+    def __init__(self, name, QlientList=None,
+                 QlientPorts=None, QlientKeys=None):
+        super().__init__(name=name)
+        self.QlientList = QlientList
+        self.QlientPorts = QlientPorts
+        self.QlientKeys = QlientKeys
 
 class QEurope():
 
@@ -174,7 +253,7 @@ class QEurope():
         Parameter:
         name: name of the network (str) /!\ Expected name should start with 'Qonnector' /!\
         """
-        self.network = Network(name)
+        self.network = ns.nodes.network.Network(name)
         self.name = name
 
     def Add_Qonnector(self, qonnectorname):
@@ -210,15 +289,15 @@ class QEurope():
 
         # Create quantum channels and add them to the network
 
-        qchannel1 = QuantumChannel("QuantumChannelSto{}".format(qlientname), length=distance, delay=1,
-                                   models={"quantum_loss_model": FibreLossModel(p_loss_init=1 - fiber_coupling,
+        qchannel1 = ns.components.QuantumChannel("QuantumChannelSto{}".format(qlientname), length=distance, delay=1,
+                                   models={"quantum_loss_model": ns.components.models.qerrormodels.FibreLossModel(p_loss_init=1 - fiber_coupling,
                                                                                 p_loss_length=fiber_loss),
-                                           "quantum_noise_model": DephaseNoiseModel(dephase_rate=fiber_dephasing_rate,
+                                           "quantum_noise_model": ns.components.models.qerrormodels.DephaseNoiseModel(dephase_rate=fiber_dephasing_rate,
                                                                                     time_independent=True)})
-        qchannel2 = QuantumChannel("QuantumChannel{}toS".format(qlientname), length=distance, delay=1,
-                                   models={"quantum_loss_model": FibreLossModel(p_loss_init=1 - fiber_coupling,
+        qchannel2 = ns.components.QuantumChannel("QuantumChannel{}toS".format(qlientname), length=distance, delay=1,
+                                   models={"quantum_loss_model": ns.components.models.qerrormodels.FibreLossModel(p_loss_init=1 - fiber_coupling,
                                                                                 p_loss_length=fiber_loss),
-                                           "quantum_noise_model": DephaseNoiseModel(dephase_rate=fiber_dephasing_rate,
+                                           "quantum_noise_model": ns.components.models.qerrormodels.DephaseNoiseModel(dephase_rate = fiber_dephasing_rate,
                                                                                     time_independent=True)})
 
         Qonn_send, Qlient_receive = network.add_connection(
@@ -236,33 +315,3 @@ class QEurope():
 
         # Update Qlient ports
         Qlient.listports = [Qlient_send, Qlient_receive]
-'''
-        def route_qubits(msg):
-            target = msg.meta.pop('internal', None)
-
-            if isinstance(target, QuantumMemory):
-                if not target.has_supercomponent(Qonnector):
-                    raise ValueError("Can't internally route to a quantummemory that is not a subcomponent.")
-                target.ports['qin'].tx_input(msg)
-            else:
-                Qonnector.ports[Qonn_send].tx_output(msg)
-
-        # Connect the Qonnector's ports
-        qmem.ports['qout'].bind_output_handler(route_qubits)  # port to send to Qlient
-        Qonnector.ports[Qonn_receive].forward_input(qmem.ports["qin"])  # port to receive from Qlient
-
-        # Connect the Qlient's ports 
-        Qlient.ports[Qlient_receive].forward_input(Qlient.qmemory.ports["qin"])  # port to receive from qonnector
-        Qlient.qmemory.ports["qout"].forward_output(Qlient.ports[Qlient_send])  # port to send to qonnector
-
-        # Classical channels on top of that
-        cchannel1 = ClassicalChannel("ClassicalChannelSto{}".format(qlientname), length=distance, delay=1)
-        cchannel2 = ClassicalChannel("ClassicalChannel{}toS".format(qlientname), length=distance, delay=1)
-
-        network.add_connection(qonnectorto, qlientname, channel_to=cchannel1,
-                               label="ClassicalS{}".format(qlientname), port_name_node1="cout_{}".format(qlientname),
-                               port_name_node2="cin")
-        network.add_connection(qlientname, qonnectorto, channel_to=cchannel2,
-                               label="Classical{}S".format(qlientname), port_name_node1="cout",
-                               port_name_node2="cin_{}".format(qlientname))
-'''
