@@ -14,6 +14,8 @@ import networkx as nx
 import quantum_networks_functions as qnf
 
 # %%
+
+
 plt.rcParams['text.usetex'] = True
 
 ns.sim_reset()
@@ -26,16 +28,27 @@ q = "Qonnector 1"
 net2.Add_Qonnector(q)
 
 flags = {'draw_network': 1,
+         'print_parameters': 1,
          'save_parameters': 1,
-         'print_results': 1,
+         'print_lists': 1,
          'save_results': 0,
+         'runtimes': 0,
          }
+
+    
+if flags['runtimes']:
+    import time
+    start = time.time()
 
 P = pd.read_csv('parameters.csv', header=0)
 P['value'] = pd.to_numeric(P['value'], downcast='integer', errors='ignore')
 parameters = dict(zip(P['parameter'], P['value']))
 
 N_nodes = int(parameters['N_nodes'])
+
+
+if flags['print_parameters']:
+    print('\n', parameters, '\n')
 
 if flags['save_parameters']:
     directory = 'previous_parameters'
@@ -106,14 +119,21 @@ for n in range(N_nodes):
 LISTS = qnf.sifting(nodes, Qlients) # Sifting to keep the qubit from the same GHZ state
 
 
-if flags['print_results']:
+if flags['print_lists']:
     print("\nNumber of qubits received by the %d Qlients: %d" % (N_nodes, len(LISTS)))
 
-    # print("Number of qubits received by the %d Qlients: %d (OLD FUNCTION)" % (N_nodes, len(Lres)))
     # print("Sharing rate: " + str(len(Lres) / (parameters['simtime'] * 1e-9)) + " GHZ states per second")
-    # print(Lres)
     print(LISTS)
     # print("QBER:\t%g" % qe.estimQBERGHZ4(Lres))
 
 if flags['save_results']:
     print('TODO: save_results')
+
+if flags['runtimes']:
+    end = time.time()
+    print('Elapsed time:\t%d\tseconds'%(end-start))
+
+#%%
+
+# if __name__=='__main__':
+#     print()
