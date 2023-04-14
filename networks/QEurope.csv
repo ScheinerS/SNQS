@@ -1,0 +1,7 @@
+Name,Type,Link,Distance to Qonnector (km),Memory (size),Processor
+Qonnector Paris,Qonnector,,0,1,1
+Jussieu,Qlient,Qonnector Paris,0.001,1,0
+IRIF,Qlient,Qonnector Paris,3.01,1,0
+Telecom,Qlient,Qonnector Paris,18.77,1,0
+Chatillon,Qlient,Qonnector Paris,6.77,1,0
+CEA,Qlient,Qonnector Paris,31.55,1,0
