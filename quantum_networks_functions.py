@@ -110,36 +110,26 @@ class send_ghz(ns.protocols.NodeProtocol):
 
 #%%
 
-def draw_network(G, nodes):
+def draw_network(G, nodes, parameters):
+    
     plt.close('all')
+    plt.rcParams['text.usetex'] = True
     
     colours = []
     for k in nodes.keys():
         colours.append(nodes[k].dist) # Value map for the colouring of the nodes.
     
     cmap = plt.cm.coolwarm
-    
-    # node_positions = {} # pos (dict or None optional (default=None)) – Initial positions for nodes as a dictionary with node as keys and values as a coordinate list or tuple. If None, then use random initial positions.
-    # for k in nodes.keys():
-    #     node_positions[k] = (np.sqrt(nodes[k].dist), np.sqrt(nodes[k].dist))
-    
-    # weights = {}
-    # for n in range(len(nodes)-1):
-    #     weights[nodes[n].name] = nodes[n].dist
         
-    # pos = nx.spring_layout(G, k=None, pos=None, fixed=None, iterations=50, threshold=0.0001, weight=None, scale=1, center=None, dim=2, seed=None)
-    
     nx.draw(G, cmap=cmap, node_color=colours, with_labels=True, font_color='black', verticalalignment='center', horizontalalignment='center')
     
-    
-    sm = plt.cm.ScalarMappable(cmap=cmap)#, norm=plt.Normalize(vmin = vmin, vmax=vmax))
-    sm._A = []
-    plt.colorbar(sm, orientation='vertical', shrink=0.8, label=r'Distance to Qonnector')
+    sm = plt.cm.ScalarMappable(norm=None, cmap=cmap)
+    plt.colorbar(sm, orientation='vertical', shrink=0.8, label=r'Distance to nearest Qonnector [km]')
     
     plt.show()
     save_dir = 'plots'
     aux.check_dir(save_dir)
-    plt.savefig(save_dir + os.sep + 'graph_N=%d.png'%(len(nodes)-1))
+    plt.savefig(save_dir + os.sep + parameters['network'] +'.png')
 
 #%%
 def sifting(nodes, Qlients):

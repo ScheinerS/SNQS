@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 # import numpy as np
 import netsquid as ns
 import pandas as pd
+import os
 
 # from QEuropeFunctions import *
 import QEuropeFunctions as qe
@@ -14,38 +15,42 @@ import networkx as nx
 import quantum_networks_functions as qnf
 
 # %%
+# class Network():
+#     def __init__(self, node_name, qonnector, dist_to_Qonnector, node_type):
+        
+class Node:
+    def __init__(self, node_name, link, dist_to_Qonnector, node_type):
+        self.name = node_name
+        self.link = link # Hub the node is connected to.
+        self.dist = dist_to_Qonnector
+        self.type = node_type # Qonnector, Qlient.
 
+#%%
 
-plt.rcParams['text.usetex'] = True
+parameters = aux.read_parameters('parameters.csv')
+
+network = pd.read_csv('networks' + os.sep + parameters['network'] + '.csv', header=0)
 
 ns.sim_reset()
 
 # Creation of a network instance
-net2 = qe.QEurope("net")
+net2 = qnf.QEurope("net")
 
 # Qonnector
+
 q = "Qonnector 1"
 net2.Add_Qonnector(q)
 
-flags = {'draw_network': 0,
-         'print_parameters': 1,
+q2 = "Qonnector 2"
+net2.Add_Qonnector(q2)
+
+flags = {'draw_network': 1,
+         'print_parameters': 0,
          'save_parameters': 0,
          'print_lists': 1,
          'save_results': 0,
          'runtimes': 0,
          }
-
-    
-if flags['runtimes']:
-    import time
-    start = time.time()
-
-P = pd.read_csv('parameters.csv', header=0)
-P['value'] = pd.to_numeric(P['value'], downcast='integer', errors='ignore')
-parameters = dict(zip(P['parameter'], P['value']))
-
-N_nodes = int(parameters['N_nodes'])
-
 
 if flags['print_parameters']:
     print('\n', parameters, '\n')
@@ -55,34 +60,35 @@ if flags['save_parameters']:
     aux.check_dir(directory)
     aux.save_parameters(directory)
 
-class Node:
-    def __init__(self, node_name, dist_to_Qonnector, node_type):
-        self.name = node_name
-        self.dist = dist_to_Qonnector
-        self.type = node_type # processor, etc. Not used yet.
+if flags['runtimes']:
+    import time
+    start = time.time()
 
+# N_nodes = int(parameters['N_nodes'])
 
-nodes = {q: Node(q, 0, 'Qonnector')}
+nodes = {}
 
-for n in range(N_nodes):
-    nodes[n] = Node('node_%s' % str(n), n, 'node')  # distances d=n, for now.
+# Qonnectors
+# for q in network[network['Type']=='Qonnector']['Name']:
+#     nodes[q] = Node(q, None, 0, 'Qonnector')
 
-    net2.Add_Qlient(nodes[n].name, nodes[n].dist, q)  # Connections between the parties and the Qonnector
+for n in range(len(network)):
+    nodes[network['Name'].at[n]] = Node(network['Name'].at[n], network['Link'].at[n], network['Distance to Qonnector (km)'].at[n], network['Type'].at[n])
+
+for node in nodes.values():
+    if node.type == 'Qlient':
+        net2.Add_Qlient(node.name, node.dist, node.link)  # Connections between the parties and the Qonnector
 
 # %% Visualisation of the network.
 
 if flags['draw_network']:
     G = nx.Graph()
 
-    elist = []
+    edges = list(zip(network['Name'], network['Link']))
 
-    # Adding edges between the nodes and the Qonnector
-    for n in range(N_nodes):
-        elist.append((str(n), q))
+    G.add_edges_from(edges)
 
-    G.add_edges_from(elist)
-
-    qnf.draw_network(G, nodes)
+    qnf.draw_network(G, nodes, parameters)
 
 # %%
 
@@ -92,25 +98,26 @@ net = net2.network
 Qonnector = net.get_node(q)
 
 Qlients = []
-for n in range(N_nodes):
-    Qlients.append(net.get_node("node_%d" % n))
-    Qlients[n].keylist = []
+for node in nodes:
+    print(node)
+    Qlients.append(net.get_node(node.name)) # TODO: fix this line.
+    Qlients[node.name].keylist = []
 
 ghzprotocol = qnf.send_ghz(Qlients, parameters, Qonnector)
 
 ghzprotocol.start()
 
 protocols = []
-for n in range(N_nodes):
-    protocols.append(qe.ReceiveProtocol(Qonnector, qe.Qlient_meas_succ, qe.Qlient_meas_flip, False, Qlients[n]))
-    protocols[n].start()
+for node in nodes:
+    protocols.append(qe.ReceiveProtocol(Qonnector, qe.Qlient_meas_succ, qe.Qlient_meas_flip, False, Qlients[node.name]))
+    protocols[node.name].start()
 
 # Simulation starting
 stat = ns.sim_run(duration=parameters['simtime'])
 
 # Adding dark count for each Qlient
-for n in range(N_nodes):
-    qe.addDarkCounts(Qlients[n].keylist, parameters['DCRateWorst'] * parameters['DetectGateWorst'],
+for node in nodes:
+    qe.addDarkCounts(Qlients[node.name].keylist, parameters['DCRateWorst'] * parameters['DetectGateWorst'],
                      int(parameters['simtime'] / parameters['ghz_time']))
 
 #%% Sifting.
@@ -119,7 +126,7 @@ LISTS = qnf.sifting(nodes, Qlients) # Sifting to keep the qubit from the same GH
 
 
 if flags['print_lists']:
-    print("\nNumber of qubits received by the %d Qlients: %d" % (N_nodes, len(LISTS)))
+    print("\nNumber of qubits received by the %d Qlients: %d" % (len(nodes), len(LISTS)))
 
     print(LISTS)
     # print("QBER:\t%g" % qe.estimQBERGHZ4(Lres))

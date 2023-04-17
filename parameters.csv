@@ -1,4 +1,5 @@
 parameter,value,description
+network,joined_stars_2x3,
 N_nodes,3,
 simtime,500000,
 f_qubit_qlient,80000000,Qubit creation attempt frequency
