@@ -20,10 +20,11 @@ import quantum_networks_functions as qnf
         
 class Node:
     def __init__(self, node_name, link, dist_to_Qonnector, node_type):
-        self.name = node_name
-        self.link = link # Hub the node is connected to.
-        self.dist = dist_to_Qonnector
-        self.type = node_type # Qonnector, Qlient.
+        self._name = node_name
+        self._link = link # Hub the node is connected to.
+        self._dist = dist_to_Qonnector
+        self._type = node_type # Qonnector, Qlient.
+        self._keylist = []   # shared one-time path
 
 #%%
 
@@ -76,10 +77,8 @@ for n in range(len(network)):
     nodes[network['Name'].at[n]] = Node(network['Name'].at[n], network['Link'].at[n], network['Distance to Qonnector (km)'].at[n], network['Type'].at[n])
 
 for node in nodes.values():
-    if node.type == 'Qlient':
-        net2.Add_Qlient(node.name, node.dist, node.link)  # Connections between the parties and the Qonnector
-
-# %% Visualisation of the network.
+    if node._type == 'Qlient':
+        net2.Add_Qlient(node._name, node._dist, node._link)  # Connections between the parties and the Qonnector
 
 if flags['draw_network']:
     G = nx.Graph()
@@ -98,10 +97,11 @@ net = net2.network
 Qonnector = net.get_node(q)
 
 Qlients = []
-for node in nodes:
-    print(node)
-    Qlients.append(net.get_node(node.name)) # TODO: fix this line.
-    Qlients[node.name].keylist = []
+for node in nodes.values():
+    print(node._name)
+    print(node._keylist)
+    Qlients.append(net.get_node(node._name))
+    # Qlients[node._name]._keylist = []
 
 ghzprotocol = qnf.send_ghz(Qlients, parameters, Qonnector)
 

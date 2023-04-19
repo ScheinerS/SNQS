@@ -115,16 +115,26 @@ def draw_network(G, nodes, parameters):
     plt.close('all')
     plt.rcParams['text.usetex'] = True
     
+    colours_dict = {'Qonnector': 'gray', 'Qlient': 'lightgray'}
+    
     colours = []
-    for k in nodes.keys():
-        colours.append(nodes[k].dist) # Value map for the colouring of the nodes.
+    for node in nodes.values():
+        colours.append(colours_dict[node._type])
     
     cmap = plt.cm.coolwarm
-        
-    nx.draw(G, cmap=cmap, node_color=colours, with_labels=True, font_color='black', verticalalignment='center', horizontalalignment='center')
     
-    sm = plt.cm.ScalarMappable(norm=None, cmap=cmap)
-    plt.colorbar(sm, orientation='vertical', shrink=0.8, label=r'Distance to nearest Qonnector [km]')
+    edge_labels = {}
+    for node in nodes.values():
+        edge = (node._name, node._link)
+        edge_labels[edge] = '%g km'%node._dist
+    
+    pos = nx.spring_layout(G)
+    
+    nx.draw(G, pos=pos, cmap=cmap, node_color=colours, with_labels=True, font_color='black', verticalalignment='center', horizontalalignment='center', width=1, linewidths=1, node_size=500, alpha=0.8, labels={node: node for node in G.nodes()})
+    nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_color='red')
+    
+    # sm = plt.cm.ScalarMappable(norm=None, cmap=cmap)
+    # plt.colorbar(sm, orientation='vertical', shrink=0.8, label=r'Distance to nearest Qonnector [km]')
     
     plt.show()
     save_dir = 'plots'
