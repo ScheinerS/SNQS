@@ -32,19 +32,6 @@ parameters = aux.read_parameters('parameters.csv')
 
 network = pd.read_csv('networks' + os.sep + parameters['network'] + '.csv', header=0)
 
-ns.sim_reset()
-
-# Creation of a network instance
-net2 = qnf.QEurope("net")
-
-# Qonnector
-
-q = "Qonnector 1"
-net2.Add_Qonnector(q)
-
-q2 = "Qonnector 2"
-net2.Add_Qonnector(q2)
-
 flags = {'draw_network': 1,
          'print_parameters': 0,
          'save_parameters': 0,
@@ -76,10 +63,28 @@ nodes = {}
 for n in range(len(network)):
     nodes[network['Name'].at[n]] = Node(network['Name'].at[n], network['Link'].at[n], network['Distance to Qonnector (km)'].at[n], network['Type'].at[n])
 
-for node in nodes.values():
-    if node._type == 'Qlient':
-        net2.Add_Qlient(node._name, node._dist, node._link)  # Connections between the parties and the Qonnector
+ns.sim_reset()
 
+# Creation of a network instance
+net2 = qnf.QEurope("net")
+
+# Initialisation of the nodes
+net = net2.network
+
+# Qonnector
+Qonnectors = []
+Qlients = []
+
+for node in nodes.values():
+    if node._type == 'Qonnector':
+        net2.Add_Qonnector(node._name)
+        Qonnectors.append(net.get_node(node._name))
+    elif node._type == 'Qlient':
+        net2.Add_Qlient(node._name, node._dist, node._link)
+        Qlients.append(net.get_node(node._name))
+    else:
+        print('Unknown node type: "%s" for node "%s". Nodes must be either of type "Qonnector" or "Qlient".'%(node._type, node._name))
+        
 if flags['draw_network']:
     G = nx.Graph()
 
@@ -91,25 +96,15 @@ if flags['draw_network']:
 
 # %%
 
-# Initialisation of the nodes
-net = net2.network
-
-Qonnector = net.get_node(q)
-
-Qlients = []
-for node in nodes.values():
-    print(node._name)
-    print(node._keylist)
-    Qlients.append(net.get_node(node._name))
-    # Qlients[node._name]._keylist = []
-
-ghzprotocol = qnf.send_ghz(Qlients, parameters, Qonnector)
+for q in Qonnectors:
+    ghzprotocol = qnf.send_ghz(Qlients, parameters, q)  # THIS LINE IS WRONG. THE GHZ STATE SHOULD BE DISTRIBUTED ONLY TO THE NODES LINKED TO THE QONNECTOR q, NOT TO ALL QLIENTS.
+    print('Check this line.')
 
 ghzprotocol.start()
 
 protocols = []
 for node in nodes:
-    protocols.append(qe.ReceiveProtocol(Qonnector, qe.Qlient_meas_succ, qe.Qlient_meas_flip, False, Qlients[node.name]))
+    protocols.append(qe.ReceiveProtocol(Qonnectors, qe.Qlient_meas_succ, qe.Qlient_meas_flip, False, Qlients[node.name]))
     protocols[node.name].start()
 
 # Simulation starting

@@ -1,0 +1,5 @@
+Name,Type,Link,Distance to Qonnector (km),Memory (size),Processor
+LIP6,Qonnector,Orange,14,2,1
+Orange,Qonnector,Telecom,43,2,1
+Telecom,Qlient,Orange,43,0,0
+MPQ,Qlient,LIP6,7.1,0,0

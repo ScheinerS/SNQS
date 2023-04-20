@@ -1,9 +1,9 @@
 Name,Type,Link,Distance to Qonnector (km),Memory (size),Processor
-Qonnector 1,Qonnector,Qonnector 2,0,1,1
-Qonnector 2,Qonnector,Qonnector 1,0,1,1
-Qlient 1,Qlient,Qonnector 1,1,1,0
-Qlient 2,Qlient,Qonnector 1,2,1,0
-Qlient 3,Qlient,Qonnector 1,3,1,0
-Qlient 4,Qlient,Qonnector 2,1,1,0
-Qlient 5,Qlient,Qonnector 2,2,1,0
-Qlient 6,Qlient,Qonnector 2,3,1,0
+Qonnector 1,Qonnector,Qonnector 2,0,3,1
+Qonnector 2,Qonnector,Qonnector 1,0,3,1
+Qlient 1,Qlient,Qonnector 1,1,0,0
+Qlient 2,Qlient,Qonnector 1,2,0,0
+Qlient 3,Qlient,Qonnector 1,3,0,0
+Qlient 4,Qlient,Qonnector 2,1,0,0
+Qlient 5,Qlient,Qonnector 2,2,0,0
+Qlient 6,Qlient,Qonnector 2,3,0,0
