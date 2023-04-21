@@ -1,14 +1,11 @@
 #!/usr/bin/env python
 
-# ctrl + alt + o : optimize imports
-
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 # import numpy as np
 import netsquid as ns
 import pandas as pd
 import os
 
-# from QEuropeFunctions import *
 import QEuropeFunctions as qe
 import aux
 import networkx as nx
@@ -30,6 +27,7 @@ class Node:
 
 parameters = aux.read_parameters('parameters.csv')
 
+aux.read_network(parameters['network'])
 network = pd.read_csv('networks' + os.sep + parameters['network'] + '.csv', header=0)
 
 flags = {'draw_network': 1,
@@ -51,8 +49,6 @@ if flags['save_parameters']:
 if flags['runtimes']:
     import time
     start = time.time()
-
-# N_nodes = int(parameters['N_nodes'])
 
 nodes = {}
 
