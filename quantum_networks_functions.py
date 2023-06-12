@@ -110,7 +110,7 @@ class send_ghz(ns.protocols.NodeProtocol):
 
 #%%
 
-def draw_network(G, nodes, parameters):
+def draw_network(G, nodes, parameters, graph_state=0):
     
     plt.close('all')
     plt.rcParams['text.usetex'] = True
@@ -132,6 +132,23 @@ def draw_network(G, nodes, parameters):
     
     nx.draw(G, pos=pos, cmap=cmap, node_color=colours, with_labels=True, font_color='black', verticalalignment='center', horizontalalignment='center', width=1, linewidths=1, node_size=500, alpha=0.8, labels={node: node for node in G.nodes()})
     nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_color='red')
+    
+    #############################
+    # SAMPLE. The edges will be given as input (variable 'graph_state' needs to be a list of edges for the graph state).
+    
+    edge_labels_gs = {}
+    for node in nodes.values():
+        edge_gs = (node._name, 'Jussieu')
+        # edge_labels_gs[edge_gs] = '%g km'%node._dist # there is no distance in this case
+    ##############################
+    
+    # Terminar esto:
+    if graph_state:
+        GS = nx.graph()
+        for node in nodes.values():
+            GS.add_edge(node._name, 'Jussieu')
+        
+        nx.draw_networkx_edges(GS, pos, edge_color='purple')
     
     # sm = plt.cm.ScalarMappable(norm=None, cmap=cmap)
     # plt.colorbar(sm, orientation='vertical', shrink=0.8, label=r'Distance to nearest Qonnector [km]')
@@ -166,6 +183,19 @@ def sifting(nodes, Qlients):
     LISTS = LISTS.dropna()
 
     return LISTS
+
+#%%
+
+def ghz_prob_succ(N_nodes):
+    # Gimeno Segovia 2015, eq. 4.44
+    # input: amount of Qlients in the network (int)
+    if N_nodes>0:
+        prob = 1/(2**(N_nodes-1))
+        return prob
+    else:
+        import sys
+        print('N_nodes =', N_nodes, '\nNumber of Qlients must be an integer greater than zero.')
+        sys.exit()
 
 #%%
 
@@ -289,21 +319,15 @@ class QEurope():
 
         # Create quantum channels and add them to the network
 
-        qchannel1 = ns.components.QuantumChannel("QuantumChannelSto{}".format(qlientname), length=distance, delay=1,
-                                   models={"quantum_loss_model": ns.components.models.qerrormodels.FibreLossModel(p_loss_init=1 - fiber_coupling,
-                                                                                p_loss_length=fiber_loss),
-                                           "quantum_noise_model": ns.components.models.qerrormodels.DephaseNoiseModel(dephase_rate=fiber_dephasing_rate,
-                                                                                    time_independent=True)})
-        qchannel2 = ns.components.QuantumChannel("QuantumChannel{}toS".format(qlientname), length=distance, delay=1,
-                                   models={"quantum_loss_model": ns.components.models.qerrormodels.FibreLossModel(p_loss_init=1 - fiber_coupling,
-                                                                                p_loss_length=fiber_loss),
-                                           "quantum_noise_model": ns.components.models.qerrormodels.DephaseNoiseModel(dephase_rate = fiber_dephasing_rate,
-                                                                                    time_independent=True)})
+        qchannel1 = ns.components.QuantumChannel("QuantumChannelSto{}".format(qlientname), length=distance, delay=1, models={"quantum_loss_model": ns.components.models.qerrormodels.FibreLossModel(p_loss_init=1 - fiber_coupling, p_loss_length=fiber_loss), "quantum_noise_model": ns.components.models.qerrormodels.DephaseNoiseModel(dephase_rate=fiber_dephasing_rate, time_independent=True)})
+        
+        qchannel2 = ns.components.QuantumChannel("QuantumChannel{}toS".format(qlientname),
+                                                 length=distance,
+                                                 delay=1,
+                                                 models={"quantum_loss_model": ns.components.models.qerrormodels.FibreLossModel(p_loss_init=1 - fiber_coupling, p_loss_length=fiber_loss), "quantum_noise_model": ns.components.models.qerrormodels.DephaseNoiseModel(dephase_rate = fiber_dephasing_rate, time_independent=True)})
 
-        Qonn_send, Qlient_receive = network.add_connection(
-            qonnectorto, qlientname, channel_to=qchannel1, label="quantumS{}".format(qlientname))
-        Qlient_send, Qonn_receive = network.add_connection(
-            qlientname, qonnectorto, channel_to=qchannel2, label="quantum{}S".format(qlientname))
+        Qonn_send, Qlient_receive = network.add_connection(qonnectorto, qlientname, channel_to=qchannel1, label="quantumS{}".format(qlientname))
+        Qlient_send, Qonn_receive = network.add_connection(qlientname, qonnectorto, channel_to=qchannel2, label="quantum{}S".format(qlientname))
 
         # Update the Qonnector's properties
         qmem = QuantumProcessor("QonnectorMemoryTo{}".format(qlientname), num_positions=2,
