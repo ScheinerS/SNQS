@@ -14,8 +14,16 @@ def save_parameters(directory):
     shutil.copy2('parameters.csv', directory + os.sep + 'parameters_' + timestamp + '.csv')
 
 def read_parameters(filename):
-    P = pd.read_csv('parameters.csv', header=0)
-    P['value'] = pd.to_numeric(P['value'], downcast='integer', errors='ignore')
+    # filename = 'parameters'
+    
+    P = pd.read_csv(filename + '.csv', skiprows=0)
+    P['value_num'] = pd.to_numeric(P['value'], downcast='integer', errors='ignore')
+    P['value'] = P['value_num'][P['value_num'].notna()]
+    
+    # Q = pd.DataFrame()
+    # Q['value'] = pd.to_numeric(P['value'], errors='ignore')
+    
+    
     parameters = dict(zip(P['parameter'], P['value']))
     return parameters
 
