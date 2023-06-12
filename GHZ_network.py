@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-# import matplotlib.pyplot as plt
-# import numpy as np
 import netsquid as ns
 import pandas as pd
 import os
@@ -21,13 +19,13 @@ class Node:
         self._link = link # Hub the node is connected to.
         self._dist = dist_to_Qonnector
         self._type = node_type # Qonnector, Qlient.
-        self._keylist = []   # shared one-time path
+        self._keylist = []   # shared one-time pad
 
 #%%
 
-parameters = aux.read_parameters('parameters.csv')
+parameters = aux.read_parameters('parameters')
+parameters['network'] = 'QEurope' # TODO: fix this. If the network name is on the same column as the values, they all get converted to 'str'...
 
-aux.read_network(parameters['network'])
 network = pd.read_csv('networks' + os.sep + parameters['network'] + '.csv', header=0)
 
 flags = {'draw_network': 1,
@@ -51,10 +49,6 @@ if flags['runtimes']:
     start = time.time()
 
 nodes = {}
-
-# Qonnectors
-# for q in network[network['Type']=='Qonnector']['Name']:
-#     nodes[q] = Node(q, None, 0, 'Qonnector')
 
 for n in range(len(network)):
     nodes[network['Name'].at[n]] = Node(network['Name'].at[n], network['Link'].at[n], network['Distance to Qonnector (km)'].at[n], network['Type'].at[n])
