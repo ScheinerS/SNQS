@@ -1,6 +1,4 @@
 parameter,value,description
-network,star_05,
-N_nodes,3,
 simtime,500000,
 f_qubit_qlient,80000000,Qubit creation attempt frequency
 Qlient_init_time,0,time to create |0> in a Qlient node in ns
