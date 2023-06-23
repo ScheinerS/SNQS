@@ -9,27 +9,29 @@ Created on Thu May 25 15:25:24 2023
 # Small network example.
 
 import netsquid as ns
+import numpy as np
 # import pandas as pd
 # import os
 
 # import QEuropeFunctions as qe
 # import aux
 # import networkx as nx
-import quantum_networks_functions as qnf
+# import quantum_networks_functions as qnf
 
 #%%
+# I think this block is just an example and I can remove it.
 
-qubits = ns.qubits.create_qubits(2)
-print(qubits)
+# qubits = ns.qubits.create_qubits(2)
+# print(qubits)
 
-qubit = qubits[0]
+# qubit = qubits[0]
 
-# To check the state is |0> we check its density matrix using reduced_dm():
-ns.qubits.reduced_dm(qubit)
+# # To check the state is |0> we check its density matrix using reduced_dm():
+# ns.qubits.reduced_dm(qubit)
 
-measurement_result, prob = ns.qubits.measure(qubit, observable=ns.X)
+# measurement_result, prob = ns.qubits.measure(qubit, observable=ns.X)
 
-ns.qubits.reduced_dm(qubit)
+# ns.qubits.reduced_dm(qubit)
 
 #%%
 
@@ -42,36 +44,75 @@ def combine_Q(Q):
     for q in Q[1:]:
         Q[0].combine(q)
 
-Q = ns.qubits.create_qubits(4)
-print_Q()
+n_qubits = 4
 
+import itertools
+
+basis = list(itertools.product([0, 1], repeat=n_qubits))
+
+def print_state():
+    coefficients = [np.round(x[0],3) for x in Q[0].qstate.qrepr.ket]
+    # '+'.join(list(map(str, zip(coefficients, basis))))
+    state = ''
+    for c,b in zip(coefficients, basis):
+        if c:
+            state = state + ' + ' + str(c) + ' |%s>'%str(b).strip('()')
+    print(state)
+    # state = ' + '.join([' ' + str(coeff) + '*' + str(b) + ' ' for coeff,b in zip(coefficients, basis)])
+    
+    # state = ' + '.join([' ' + str(coeff) + '*' + str(b) + ' ' for coeff,b in zip(coefficients, basis)])
+    # for i in len(coefficients):
+    #     c = coefficients[i][0]
+    #     b = str(list(basis[i]))
+    #     state = ''
+    #     list(zip(coefficients, basis))
+    #     if c:
+    #         state = state + '\t%s |' + ','.join(b)
+            
+    #         coefficients[i][0]
+    #         basis[i][0]
+
+#%%
+
+Q = ns.qubits.create_qubits(n_qubits)
 combine_Q(Q)
-print_Q()
+# print_Q()
+print_state()
 
 qmem = ns.components.qmemory.QuantumMemory('MyQMem', num_positions=len(Q))
 qmem.put(Q)
 
 print('H on q0')
 ns.components.instructions.INSTR_H(qmem, positions=[0])
-print_Q()
+# print_Q()
+print_state()
 
 print('CNOT on q0 & q1')
 ns.components.instructions.INSTR_CNOT(qmem, positions=[0,1])
-print_Q()
+# print_Q()
+print_state()
+
+print('CNOT on q0 & q1')
+ns.components.instructions.INSTR_CNOT(qmem, positions=[0,1])
+# print_Q()
+print_state()
 
 print('H on q2')
 ns.components.instructions.INSTR_H(qmem, positions=[2])
-print_Q()
+# print_Q()
+print_state()
 
 print('CNOT on q2 & q3')
 ns.components.instructions.INSTR_CNOT(qmem, positions=[2, 3])
-print_Q()
+# print_Q()
+print_state()
 
 
-
+# TODO: fix from here on.
 print('CNOT on q1 & q2')
 ns.components.instructions.INSTR_CNOT(qmem, positions=[1, 2])
-print_Q()
+# print_Q()
+print_state()
 
 #%%
 
