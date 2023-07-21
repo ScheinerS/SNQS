@@ -8,6 +8,7 @@ import QEuropeFunctions as qe
 import aux
 import networkx as nx
 import quantum_networks_functions as qnf
+import plot_network as pn
 
 # %%
 # class Network():
@@ -82,7 +83,7 @@ if flags['draw_network']:
 
     G.add_edges_from(edges)
 
-    qnf.draw_network(G, nodes, parameters)
+    pn.draw_network(G, nodes, parameters)
 
 # %%
 

@@ -24,7 +24,7 @@ DCRateWorst,1000,
 DetectGateBest,1E-10,
 DetectGateWorst,5E-10,
 fiber_coupling,0.9,Fiber coupling efficiency
-fiber_loss,0.18,Loss in fiber in dB/km
+fiber_loss,0,Loss in fiber in dB/km
 fiber_dephasing_rate,0.02,dephasing rate in the fiber (Hz)
 ghz_time,125,time to create a N-qubit GHZ state (ns)
 ghz_succ,1,

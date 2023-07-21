@@ -19,19 +19,11 @@ import numpy as np
 # import quantum_networks_functions as qnf
 
 #%%
-# I think this block is just an example and I can remove it.
 
-# qubits = ns.qubits.create_qubits(2)
-# print(qubits)
-
-# qubit = qubits[0]
-
-# # To check the state is |0> we check its density matrix using reduced_dm():
-# ns.qubits.reduced_dm(qubit)
-
-# measurement_result, prob = ns.qubits.measure(qubit, observable=ns.X)
-
-# ns.qubits.reduced_dm(qubit)
+def qonnect(Q):
+    # This function takes a Qonnector Q that shares Bell pairs with all its Qlients 
+    # and returns them sharing a GHZ state.
+    return
 
 #%%
 
@@ -56,21 +48,8 @@ def print_state():
     state = ''
     for c,b in zip(coefficients, basis):
         if c:
-            state = state + ' + ' + str(c) + ' |%s>'%str(b).strip('()')
+            state = state + ' + ' + str(c) + '\t| %s >'%str(b).strip('()') + '\n'
     print(state)
-    # state = ' + '.join([' ' + str(coeff) + '*' + str(b) + ' ' for coeff,b in zip(coefficients, basis)])
-    
-    # state = ' + '.join([' ' + str(coeff) + '*' + str(b) + ' ' for coeff,b in zip(coefficients, basis)])
-    # for i in len(coefficients):
-    #     c = coefficients[i][0]
-    #     b = str(list(basis[i]))
-    #     state = ''
-    #     list(zip(coefficients, basis))
-    #     if c:
-    #         state = state + '\t%s |' + ','.join(b)
-            
-    #         coefficients[i][0]
-    #         basis[i][0]
 
 #%%
 
@@ -92,11 +71,6 @@ ns.components.instructions.INSTR_CNOT(qmem, positions=[0,1])
 # print_Q()
 print_state()
 
-print('CNOT on q0 & q1')
-ns.components.instructions.INSTR_CNOT(qmem, positions=[0,1])
-# print_Q()
-print_state()
-
 print('H on q2')
 ns.components.instructions.INSTR_H(qmem, positions=[2])
 # print_Q()
@@ -107,15 +81,29 @@ ns.components.instructions.INSTR_CNOT(qmem, positions=[2, 3])
 # print_Q()
 print_state()
 
+#%%
 
-# TODO: fix from here on.
-print('CNOT on q1 & q2')
-ns.components.instructions.INSTR_CNOT(qmem, positions=[1, 2])
+# measurement_result, prob = ns.qubits.measure(qubit, observable=ns.X)
+
+print('X measurement on q1 ')
+ns.components.instructions.INSTR_H(qmem, positions=[2])
 # print_Q()
 print_state()
 
-#%%
 
+# print('H on q2')
+# ns.components.instructions.INSTR_H(qmem, positions=[2])
+# # print_Q()
+# print_state()
+
+# # TODO: fix from here on.
+# print('CNOT on q1 & q2')
+# ns.components.instructions.INSTR_CNOT(qmem, positions=[1, 2])
+# # print_Q()
+# print_state()
+
+#%%
+'''
 #graph way
 
 Q = ns.qubits.create_qubits(4)
@@ -332,3 +320,4 @@ print_Q()
 # if flags['runtimes']:
 #     end = time.time()
 #     print('Elapsed time:\t%d\tseconds'%(end-start))
+'''

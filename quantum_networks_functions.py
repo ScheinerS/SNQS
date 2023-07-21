@@ -15,12 +15,7 @@ Created: 2023-03-01
 import numpy as np
 import scipy as sp
 import netsquid as ns
-import matplotlib.pyplot as plt
-import networkx as nx
 import pandas as pd
-import os
-
-import aux
 
 class send_ghz(ns.protocols.NodeProtocol):
     """
@@ -94,7 +89,7 @@ class send_ghz(ns.protocols.NodeProtocol):
         
         while True:
             yield self.await_port_input(GHZmem.ports["qin0"])
-            for n in range(N_nodes):
+            for n in range(1, N_nodes):
                 GHZmem.pop([n], skip_noise=True, meta_data={'internal':memories[n]})
             
             b = sp.stats.bernoulli.rvs(self._GHZ_succ)
@@ -108,55 +103,7 @@ class send_ghz(ns.protocols.NodeProtocol):
             for n in range(N_nodes):
                 memories[n].reset()
 
-#%%
 
-def draw_network(G, nodes, parameters, graph_state=0):
-    
-    plt.close('all')
-    plt.rcParams['text.usetex'] = True
-    
-    colours_dict = {'Qonnector': 'gray', 'Qlient': 'lightgray'}
-    
-    colours = []
-    for node in nodes.values():
-        colours.append(colours_dict[node._type])
-    
-    cmap = plt.cm.coolwarm
-    
-    edge_labels = {}
-    for node in nodes.values():
-        edge = (node._name, node._link)
-        edge_labels[edge] = '%g km'%node._dist
-    
-    pos = nx.spring_layout(G)
-    
-    nx.draw(G, pos=pos, cmap=cmap, node_color=colours, with_labels=True, font_color='black', verticalalignment='center', horizontalalignment='center', width=1, linewidths=1, node_size=500, alpha=0.8, labels={node: node for node in G.nodes()})
-    nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_color='red')
-    
-    #############################
-    # SAMPLE. The edges will be given as input (variable 'graph_state' needs to be a list of edges for the graph state).
-    
-    edge_labels_gs = {}
-    for node in nodes.values():
-        edge_gs = (node._name, 'Jussieu')
-        # edge_labels_gs[edge_gs] = '%g km'%node._dist # there is no distance in this case
-    ##############################
-    
-    # Terminar esto:
-    if graph_state:
-        GS = nx.graph()
-        for node in nodes.values():
-            GS.add_edge(node._name, 'Jussieu')
-        
-        nx.draw_networkx_edges(GS, pos, edge_color='purple')
-    
-    # sm = plt.cm.ScalarMappable(norm=None, cmap=cmap)
-    # plt.colorbar(sm, orientation='vertical', shrink=0.8, label=r'Distance to nearest Qonnector [km]')
-    
-    plt.show()
-    save_dir = 'plots'
-    aux.check_dir(save_dir)
-    plt.savefig(save_dir + os.sep + parameters['network'] +'.png')
 
 #%%
 def sifting(nodes, Qlients):
