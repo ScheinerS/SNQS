@@ -13,6 +13,7 @@ import os
 import aux
 import netsquid as ns
 
+import aux
 import plt_parameters
 
 #%%
@@ -31,19 +32,20 @@ def state_to_graph_state(nodes, state=0):
     # takes a NetSquid state and returns the list of edges of the graph state. If no state is specify, the 
     
     edges = []
-    if len(state)==0:
+    if state==0:
         print('\nEmpty graph state.\n')
         return edges
     
     else:
         node_list = list(nodes.values())
-        for i in range(len(node_list)):
-            for j in range(i, len(node_list)):
+        # TODO: finish the following block:
+        # for i in range(len(node_list)):
+            # for j in range(i, len(node_list)):
                 # Hay que chequear si los qubits de i y j estan entrelazados.
                 # TODO
-                print(i, j)
-        for node in nodes.values():
-            edges.append((node._name, 'Jussieu'))
+                # print(i, j)
+        for node in node_list[1:]:
+            edges.append((node_list[0]._name, node._name))
             
             edges = list(set(edges))    # drops duplicates
         return edges
@@ -52,8 +54,11 @@ def state_to_graph_state(nodes, state=0):
 # S_edges = state_to_graph_state(nodes, state=ket_representation)
 #%%
 
-def draw_network(N, nodes, parameters, Graph_State=nx.Graph(), plot_graph_state=0):
+def draw_network(N, nodes, N_pos, parameters, S, plot_graph_state=0, steps=False):
     # Takes a network N and a graph state S, both type nx.Graph(), and plots them.
+    
+    plt.figure()
+    
     colours_dict = {'Qonnector': 'gray', 'Qlient': 'lightgray'}
     
     colours = []
@@ -66,8 +71,6 @@ def draw_network(N, nodes, parameters, Graph_State=nx.Graph(), plot_graph_state=
     for node in nodes.values():
         edge = (node._name, node._link)
         edge_labels[edge] = r'$%g \, km$'%node._dist
-    
-    pos = nx.spring_layout(N)
     
     options = {"edgecolors": "tab:gray",
                "node_size": 800,
@@ -82,22 +85,22 @@ def draw_network(N, nodes, parameters, Graph_State=nx.Graph(), plot_graph_state=
     for node in N.nodes():
         node_labels[node] = r'%s'%node
         
-    nx.draw_networkx(N, pos=pos, node_color=colours, with_labels=True, labels=node_labels, **options)
+    nx.draw_networkx(N, pos=N_pos, node_color=colours, with_labels=True, labels=node_labels, **options)
 
-    nx.draw_networkx_edge_labels(N, pos, edge_labels=edge_labels, font_color='red')
+    edge_label_colour = 'blue'
+    nx.draw_networkx_edge_labels(N, N_pos, edge_labels=edge_labels, font_color=edge_label_colour)
     
     
-    if plot_graph_state:
-        GS = nx.Graph()
-        for node in nodes.values():
-            GS.add_edge(node._name, 'Jussieu')
-        
-        nx.draw_networkx_edges(GS, pos, edge_color='lightblue')
+    if plot_graph_state:        
+        nx.draw_networkx_edges(S, N_pos, edge_color='purple', width=3, alpha=0.5)
+        nx.draw_networkx_edge_labels(N, N_pos, edge_labels=edge_labels, font_color=edge_label_colour)
     
     plt.show()
-    save_dir = 'plots'
+    save_dir = 'plots' + os.sep + parameters['network']
     aux.check_dir(save_dir)
-    plt.savefig(save_dir + os.sep + parameters['network'] +'.png')
+    
+    plt.savefig(save_dir + os.sep + parameters['network'] + '_' + str(step) +'.png')
+
 #%%
 
 if __name__ == "__main__":
@@ -115,10 +118,14 @@ if __name__ == "__main__":
     edges = list(zip(network['Name'], network['Link']))
     N.add_edges_from(edges)
     
+    N_pos = nx.spring_layout(N)
+    
     ##############
+    '''
     import netsquid as ns
     import local_complementation as lc
-    '''
+    
+    n_qubits = 4
     Q = ns.qubits.create_qubits(n_qubits)
     lc.combine_Q(Q)
     lc.print_state()
@@ -129,9 +136,25 @@ if __name__ == "__main__":
     '''
     
     ##############
-    S = nx.Graph()
-    S_edges = state_to_graph_state(nodes, state=0)
-    S.add_edges_from(S_edges)
-
-    draw_network(N, nodes, parameters, Graph_State=S, plot_graph_state=1)
+    Graph_States = []
     
+    for i in range(len(nodes)):
+        S = nx.Graph()
+        S_edges = state_to_graph_state(nodes, state=1) # TODO: state should later be the state, not a '1'.
+        S_edges = S_edges[:i] # TODO: This line should be removed once state_to_graph_state() is actually working.
+        S.add_edges_from(S_edges)
+        Graph_States.append(S)
+    
+    for step in range(len(Graph_States)):
+        draw_network(N, nodes, N_pos, parameters, S=Graph_States[step], plot_graph_state=1, steps=step)
+    
+    # path = 'plots' + os.sep + parameters['network']
+    # aux.check_dir(path)
+    # plt.savefig(path + os.sep + parameters['network'] + '.png')
+    
+    ANIM = True
+    
+    if ANIM:
+        import network_animation as na
+        
+        na.animation(parameters['network'])
