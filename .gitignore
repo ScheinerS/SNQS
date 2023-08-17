@@ -1,4 +1,8 @@
 __pycache__/
 previous_parameters/
 plots/
+animations/
 *.png
+*.mp4
+*.mpeg
+*.gif
