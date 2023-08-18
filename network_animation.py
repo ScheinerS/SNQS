@@ -27,12 +27,7 @@ def animation(network_name):
     
     L = len(glob.glob('plots' + os.sep + network_name + os.sep + "*.png"))
     
-    filenames = sorted(glob.glob('plots' + os.sep + network_name + os.sep + "*"))
-    
-    # for i in range(L):
-    #     #print('Adding frame %d/%d\r'%(i,L), end='')
-    #     filenames.append(file + '/' + network_name + '-' + str(i) + '.png')
-    
+    filenames = sorted(glob.glob('plots' + os.sep + network_name + os.sep + "*"))    
     
     images = []
     

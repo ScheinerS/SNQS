@@ -9,18 +9,36 @@ import aux
 import networkx as nx
 import quantum_networks_functions as qnf
 import plot_network as pn
+# import local_complementation as lc
 
 # %%
 # class Network():
 #     def __init__(self, node_name, qonnector, dist_to_Qonnector, node_type):
         
 class Node:
-    def __init__(self, node_name, link, dist_to_Qonnector, node_type):
+    def __init__(self, node_name, link, dist_to_Qonnector, node_type, number_of_qubits=1):
         self._name = node_name
         self._link = link # Hub the node is connected to.
         self._dist = dist_to_Qonnector
         self._type = node_type # Qonnector, Qlient.
         self._keylist = []   # shared one-time pad
+        self._number_of_qubits = number_of_qubits   # number of qubits for this node
+        self._qubits = ns.qubits.create_qubits(number_of_qubits)
+
+def initialise_qubits(nodes):
+    # receives the dictionary of nodes in the state |0> and returns it in the |+> state.
+    for node in nodes.values():
+        for qubit in node._qubits:
+            ###########################
+            # TERMINAR ESTO:
+            qmem = QuantumMemory('MyQMem', num_positions=1)
+            qmem.put([qubit])
+            print(qubit.qstate.qrepr)
+            print("H on %s's qubit"%node._name)
+            ns.components.instructions.INSTR_H(qubit, positions=[0])
+            print(qubit.qstate.qrepr)
+            ###########################
+            # ESTE BLOQUE TODAVIA NO FUNCIONA.
 
 #%%
 

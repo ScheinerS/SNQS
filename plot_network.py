@@ -19,13 +19,14 @@ import plt_parameters
 #%%
 
 class Node:
-    def __init__(self, node_name, link, dist_to_Qonnector, node_type):
+    def __init__(self, node_name, link, dist_to_Qonnector, node_type, number_of_qubits=1):
         self._name = node_name
         self._link = link # Hub the node is connected to.
         self._dist = dist_to_Qonnector
         self._type = node_type # Qonnector, Qlient.
         self._keylist = []   # shared one-time pad
-        self._qubit = ns.qubits.create_qubits(1)
+        self._number_of_qubits = number_of_qubits   # number of qubits for this node
+        self._qubits = ns.qubits.create_qubits(number_of_qubits)
 
 
 def state_to_graph_state(nodes, state=0):
@@ -92,7 +93,7 @@ def draw_network(N, nodes, N_pos, parameters, S, plot_graph_state=0, steps=False
     
     
     if plot_graph_state:        
-        nx.draw_networkx_edges(S, N_pos, edge_color='purple', width=3, alpha=0.5)
+        nx.draw_networkx_edges(S, N_pos, edge_color='purple', width=5, alpha=0.5)
         nx.draw_networkx_edge_labels(N, N_pos, edge_labels=edge_labels, font_color=edge_label_colour)
     
     plt.show()
@@ -102,6 +103,8 @@ def draw_network(N, nodes, N_pos, parameters, S, plot_graph_state=0, steps=False
     plt.savefig(save_dir + os.sep + parameters['network'] + '_' + str(step) +'.png')
 
 #%%
+
+
 
 if __name__ == "__main__":
     
@@ -113,7 +116,14 @@ if __name__ == "__main__":
     nodes = {}
     for n in range(len(network)):
         nodes[network['Name'].at[n]] = Node(network['Name'].at[n], network['Link'].at[n], network['Distance to Qonnector (km)'].at[n], network['Type'].at[n])
-
+    
+    PRINT_NODES_INFO = 0
+    
+    if PRINT_NODES_INFO:
+        import pprint
+        for node in nodes.values():
+            pprint.pprint(vars(node), width=1)
+    
     N = nx.Graph()
     edges = list(zip(network['Name'], network['Link']))
     N.add_edges_from(edges)
