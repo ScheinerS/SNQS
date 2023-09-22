@@ -10,92 +10,252 @@ Created on Thu May 25 15:25:24 2023
 
 import netsquid as ns
 import numpy as np
+import itertools
+
 # import pandas as pd
 # import os
 
 # import QEuropeFunctions as qe
 # import aux
 # import networkx as nx
-# import quantum_networks_functions as qnf
+import quantum_networks_functions as qnf
+
 
 #%%
 
-def qonnect(Q):
-    # This function takes a Qonnector Q that shares Bell pairs with all its Qlients 
-    # and returns them sharing a GHZ state.
-    return
+# def qonnect(Q, verbose=1):
+#     # This function takes a Qonnector Q that shares Bell pairs with all its Qlients 
+#     # and returns them sharing a GHZ state.
+#     return
 
-#%%
 
-def print_Q():
+def print_Q(Q):
     # q=Q[0]
     # print('\n')
     print(Q[0].qstate.qrepr)
 
-def combine_Q(Q):
+def combine_Q(Q, verbose=0):
+    if verbose:
+        print(50*'*')
+        print('Q:\n', Q[0].qstate.qrepr)
     for q in Q[1:]:
         Q[0].combine(q)
+    if verbose:
+        print('\nCombined Q\n:', Q[0].qstate.qrepr)
+        print(50*'*')
 
-n_qubits = 4
 
-import itertools
 
-basis = list(itertools.product([0, 1], repeat=n_qubits))
+# def print_state_as_ket(Q, print_format='plain', verbose=1):
+    
+#     # combine_Q(Q)
+    
+#     # n_qubits = len(Q)
+#     # print('len(Q)=', len(Q))
+    
+#     basis = list(itertools.product([0, 1], repeat=len(Q)))
+    
+#     coefficients = [np.round(x[0],3) for x in Q[0].qstate.qrepr.ket]
+#     # '+'.join(list(map(str, zip(coefficients, basis))))
+#     state = ''
+#     for c,b in zip(coefficients, basis):
+#         # print(c, '\t', b)
+#         # c=True # to print all coefficients.
+#         if c:
+#             if print_format=='plain':
+#                 state = state + ' + ' + str(c).replace('+0j','').replace('-0j','') + '\t\t|%s>'%str(b).strip('()').replace(',', '') + '\n'
+#             elif print_format=='latex':
+#                 state = state + ' + ' + str(c).replace('+0j','').replace('-0j','') + ' \; \ket{%s}'%str(b).strip('()').replace(',', '') + ''
+#             else:
+#                 state = state + ' + ' + str(c).replace('+0j','').replace('-0j','') + '\t| %s >'%str(b).strip('()').replace(',', '') + '\n'
+    
+#     if verbose:
+#         print(state)
+    
+#     return state
 
-def print_state(print_format='plain'):
-    coefficients = [np.round(x[0],3) for x in Q[0].qstate.qrepr.ket]
-    # '+'.join(list(map(str, zip(coefficients, basis))))
-    state = ''
-    for c,b in zip(coefficients, basis):
-        if c:
-            if print_format=='plain':
-                state = state + ' + ' + str(c).replace('+0j','') + '\t|%s>'%str(b).strip('()').replace(', ', '') + '\n'
-            elif print_format=='latex':
-                state = state + ' + ' + str(c).replace('+0j','') + ' \; \ket{%s}'%str(b).strip('()').replace(', ', '') + ''
-            else:
-                state = state + ' + ' + str(c).replace('+0j','') + '\t| %s >'%str(b).strip('()') + '\n'
-            
-    print(state)
+def print_all_Qubits(Q):
+    for i in range(len(Q)):
+        coefficients = [np.round(x[0],3) for x in Q[i].qstate.qrepr.ket]
+        print('Q[%d]:\n'%i, Q[i].qstate.qrepr.ket)
+        print('\ncoefficients: ', coefficients, '\n\n')
 
+# print_all_Qubits(Q)
+
+
+def measure(qubit, observable, verbose=1):
+    '''
+    
+
+    Parameters
+    ----------
+    qubit : TYPE
+        DESCRIPTION.
+    observable : TYPE
+        DESCRIPTION.
+    verbose : TYPE, optional
+        DESCRIPTION. The default is 1.
+
+    Returns
+    -------
+    measurement_result : TYPE
+        DESCRIPTION.
+    prob : TYPE
+        DESCRIPTION.
+
+    '''
+    
+    '''
+    
+    ******************
+    *** DO NOT USE ***
+    ******************
+    
+    The measurement is apparently mixing the cubits after measurement.
+    
+    The resulting state is not what we should see, and the measured qubit seems
+    to be always in position 0, instead of remaining in the original position.
+    This happens every time, even if we control the list of qubits.
+    
+    '''
+    
+    QMEM = ns.components.qmemory.QuantumMemory('M', num_positions=1)
+    QMEM.put(qubit)
+    measurement_result, prob = QMEM.measure(positions=[0], observable=observable, discard=False)#, meas_operators=None, bool discard=False, bool skip_noise=False, bool check_positions=True)
+    
+    combine_Q(Q, verbose=0) # Measurements split the qubits, so they need to be combined again.
+    
+    if verbose:
+        print(50*'-')
+        print('Measurement of %s on %s'%(observable.name, qubit.name))
+        print('Result:', measurement_result, 'with prob:', np.round(prob,3))
+        print('Resulting state:')
+        qnf.print_state_as_ket(Q, verbose=1) # TODO: Q no es argumento de la funcion.
+        print(50*'-')
+
+    return measurement_result, prob
 #%%
 
 if __name__=='__main__':
+    # For a star graph of edges {(0,1), (1,2)} (i.e. the graph "0-1-2")
+    
+    n_qubits = 4
+    
     Q = ns.qubits.create_qubits(n_qubits)
     combine_Q(Q)
-    # print_Q()
-    print_state('plain')
     
     qmem = ns.components.qmemory.QuantumMemory('MyQMem', num_positions=len(Q))
     qmem.put(Q)
     
-    print('H on q0')
+    print('\nInitial state:')
+    qnf.print_state_as_ket(Q)
+    # print_Q(Q)
+    
+    print('\nH on each qubit:')
     ns.components.instructions.INSTR_H(qmem, positions=[0])
-    # print_Q()
-    print_state()
-    
-    print('CNOT on q0 & q1')
-    ns.components.instructions.INSTR_CNOT(qmem, positions=[0,1])
-    # print_Q()
-    print_state()
-    
-    print('H on q2')
+    ns.components.instructions.INSTR_H(qmem, positions=[1])
     ns.components.instructions.INSTR_H(qmem, positions=[2])
-    # print_Q()
-    print_state()
+    ns.components.instructions.INSTR_H(qmem, positions=[3])
+    # print_state_as_ket(Q)
     
-    print('CNOT on q2 & q3')
-    ns.components.instructions.INSTR_CNOT(qmem, positions=[2, 3])
-    # print_Q()
-    print_state()
+    # print(qmem.peek(positions=[0, 1])[0].qstate.qrepr.ket)
+    # print(qmem.peek(positions=[0, 1])[1].qstate.qrepr.ket)
     
+    qnf.print_state_as_ket(Q)
+
+
+    # print(50*'-')
+    # # print('Measurement of %s on %s'%(observable.name, qubit.name))
+    # print('Result:', measurement_result, 'with prob:', np.round(prob,3))
+    # print('Resulting state:')
+    # print_state_as_ket(Q, verbose=1) # TODO: Q no es argumento de la funcion.
+    # print(50*'-')
+    
+    
+    # print_state_as_ket(Q)
+
+    measurement_result, prob = measure(Q[0], ns.Z)
+    # combine_Q(Q, verbose=0)
+    measurement_result, prob = measure(Q[1], ns.Z)
+    # combine_Q(Q, verbose=0)
+    measurement_result, prob = measure(Q[2], ns.Z)
+    
+    measurement_result, prob = measure(Q[3], ns.Z)
+    
+    measurement_result, prob = measure(Q[2], ns.X)
+    
+    measurement_result, prob = measure(Q[2], ns.Y)
+    
+    
+    # print_state_as_ket(Q)
+    
+    # measurement_result, prob = measure(Q[0], ns.Z)
+    # measurement_result, prob = measure(Q[0], ns.X)
+
+    
+    # print(qmem.peek(positions=[0])[0].qstate.qrepr.ket)
+    # measurement_result, prob = qmem.measure(positions=[0], observable=ns.Z, discard=False)#, meas_operators=None, bool discard=False, bool skip_noise=False, bool check_positions=True)
+    # print(qmem.peek(positions=[0])[0].qstate.qrepr.ket)
+    
+    # print_all_Qubits(Q)
+    
+    # measurement_result, prob = measure(Q[1], ns.Z)
+    # print_state_as_ket(Q, verbose=1)
+    
+    '''
+    # print('H on q3 (Qonnector)')
+    # ns.components.instructions.INSTR_H(qmem, positions=[3])
+    # print_state_as_ket(Q, verbose=1)
+    
+    print('CNOT')
+    ns.components.instructions.INSTR_CZ(qmem, positions=[0,1])
+    ns.components.instructions.INSTR_CZ(qmem, positions=[1,2])
+    ns.components.instructions.INSTR_CZ(qmem, positions=[2,3])
+    print_state_as_ket(Q, verbose=1)
+    
+    
+    print('Measurement on q1')
+    measurement_result, prob = qmem.measure(positions=[1], observable=ns.X, discard=True)#, meas_operators=None, bool discard=False, bool skip_noise=False, bool check_positions=True)
+    # measurement_result, prob = ns.qubits.measure(Q[1], observable=ns.Z)
+    # measurement_result, prob = ns.qubits.measure(Q[1], observable=ns.Z)
+    print('Result:', measurement_result, 'with prob:', np.round(prob,3), '\n')
+    print_state_as_ket(Q, verbose=1)
+
+    # ns.components.instructions.INSTR_H(qmem, positions=[1])
+    #%%
+    print('Rotation in y')
+    Rotation_y = ns.components.instructions.IRotationGate('Rotation_y')
+    if measurement_result==0:
+        ns.components.instructions.INSTR_H(qmem, positions=[0])
+        # Rotation_y.execute(qmem, positions=[1],angle=np.pi/4, axis=(0,1,0))
+        # ns.components.instructions.INSTR_Z(qmem, positions=[2])
+    else:
+        ns.components.instructions.INSTR_X(qmem, positions=[0])
+        ns.components.instructions.INSTR_H(qmem, positions=[0])
+        # Rotation_y.execute(qmem, positions=[1],angle=(-1)*np.pi/4, axis=(0,1,0))
+        # ns.components.instructions.INSTR_Z(qmem, positions=[0])
+        
+    # ns.components.instructions.INSTR_CZ(qmem, positions=[1,2])     
+    print_state_as_ket(Q, verbose=1)
+    
+    
+    # print('CNOT on q1 & q2')
+    # ns.components.instructions.INSTR_CNOT(qmem, positions=[1,2])
+    # print_state_as_ket(Q, verbose=1)
+    
+    # print('CNOT on q3 & q2')
+    # ns.components.instructions.INSTR_CNOT(qmem, positions=[3,2])
+    # print_state_as_ket(Q, verbose=1)
+
+        
     #%%
     
     # measurement_result, prob = ns.qubits.measure(qubit, observable=ns.X)
     
-    print('X measurement on q1 ')
-    ns.components.instructions.INSTR_H(qmem, positions=[2])
-    # print_Q()
-    print_state()
+    # print('X measurement on q1 ')
+    # ns.components.instructions.INSTR_H(qmem, positions=[2])
+    # # print_Q()
+    # print_state_as_ket(Q)
     
     
     # print('H on q2')
@@ -108,7 +268,7 @@ if __name__=='__main__':
     # ns.components.instructions.INSTR_CNOT(qmem, positions=[1, 2])
     # # print_Q()
     # print_state()
-    
+    '''
     #%%
     '''
     #graph way

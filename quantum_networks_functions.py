@@ -16,6 +16,7 @@ import numpy as np
 import scipy as sp
 import netsquid as ns
 import pandas as pd
+import itertools
 
 class send_ghz(ns.protocols.NodeProtocol):
     """
@@ -286,3 +287,32 @@ class QEurope():
 
         # Update Qlient ports
         Qlient.listports = [Qlient_send, Qlient_receive]
+
+
+def print_state_as_ket(Q, print_format='plain', verbose=1):
+    
+    # combine_Q(Q)
+    
+    # n_qubits = len(Q)
+    # print('len(Q)=', len(Q))
+    
+    basis = list(itertools.product([0, 1], repeat=len(Q)))
+    
+    coefficients = [np.round(x[0],3) for x in Q[0].qstate.qrepr.ket]
+    # '+'.join(list(map(str, zip(coefficients, basis))))
+    state = ''
+    for c,b in zip(coefficients, basis):
+        # print(c, '\t', b)
+        # c=True # to print all coefficients.
+        if c:
+            if print_format=='plain':
+                state = state + ' + ' + str(c).replace('+0j','').replace('-0j','') + '\t\t|%s>'%str(b).strip('()').replace(',', '') + '\n'
+            elif print_format=='latex':
+                state = state + ' + ' + str(c).replace('+0j','').replace('-0j','') + ' \; \ket{%s}'%str(b).strip('()').replace(',', '') + ''
+            else:
+                state = state + ' + ' + str(c).replace('+0j','').replace('-0j','') + '\t| %s >'%str(b).strip('()').replace(',', '') + '\n'
+    
+    if verbose:
+        print(state)
+    
+    return state
