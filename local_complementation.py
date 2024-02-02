@@ -20,7 +20,7 @@ import itertools
 # import networkx as nx
 import quantum_networks_functions as qnf
 
-
+# import ns.components.instructions.INSTR_CZ as CZ
 #%%
 
 # def qonnect(Q, verbose=1):
@@ -139,12 +139,13 @@ def measure(qubit, observable, verbose=1):
 if __name__=='__main__':
     # For a star graph of edges {(0,1), (1,2)} (i.e. the graph "0-1-2")
     
-    n_qubits = 4
+    d = 6
+    n = 3
     
-    Q = ns.qubits.create_qubits(n_qubits)
+    Q = ns.qubits.create_qubits(d)
     combine_Q(Q)
     
-    qmem = ns.components.qmemory.QuantumMemory('MyQMem', num_positions=len(Q))
+    qmem = ns.components.qmemory.QuantumMemory('MyQMem', num_positions=d)
     qmem.put(Q)
     
     print('\nInitial state:')
@@ -152,42 +153,54 @@ if __name__=='__main__':
     # print_Q(Q)
     
     print('\nH on each qubit:')
-    ns.components.instructions.INSTR_H(qmem, positions=[0])
-    ns.components.instructions.INSTR_H(qmem, positions=[1])
-    ns.components.instructions.INSTR_H(qmem, positions=[2])
-    ns.components.instructions.INSTR_H(qmem, positions=[3])
-    # print_state_as_ket(Q)
-    
-    # print(qmem.peek(positions=[0, 1])[0].qstate.qrepr.ket)
-    # print(qmem.peek(positions=[0, 1])[1].qstate.qrepr.ket)
+    for i in range(d):
+        ns.components.instructions.INSTR_H(qmem, positions=[i])
     
     qnf.print_state_as_ket(Q)
 
+    if (d, n) == (4, 2):
+        # 4-2 bundled graph state:
+        ns.components.instructions.INSTR_CZ(qmem, positions=[0,2])
+        ns.components.instructions.INSTR_CZ(qmem, positions=[0,3])
+        ns.components.instructions.INSTR_CZ(qmem, positions=[1,2])
+        ns.components.instructions.INSTR_CZ(qmem, positions=[1,3])
 
-    # print(50*'-')
-    # # print('Measurement of %s on %s'%(observable.name, qubit.name))
-    # print('Result:', measurement_result, 'with prob:', np.round(prob,3))
-    # print('Resulting state:')
-    # print_state_as_ket(Q, verbose=1) # TODO: Q no es argumento de la funcion.
-    # print(50*'-')
+    elif (d, n) == (6, 2):
+        # 6-2 bundled graph state:
+        
+        ns.components.instructions.INSTR_CZ(qmem, positions=[0,1])
+        ns.components.instructions.INSTR_CZ(qmem, positions=[0,3])
+        ns.components.instructions.INSTR_CZ(qmem, positions=[0,5])
     
+        ns.components.instructions.INSTR_CZ(qmem, positions=[2,1])
+        ns.components.instructions.INSTR_CZ(qmem, positions=[2,3])
+        ns.components.instructions.INSTR_CZ(qmem, positions=[2,5])
     
-    # print_state_as_ket(Q)
+        ns.components.instructions.INSTR_CZ(qmem, positions=[4,1])
+        ns.components.instructions.INSTR_CZ(qmem, positions=[4,3])
+        ns.components.instructions.INSTR_CZ(qmem, positions=[4,5])
+        
+    
+    elif (d, n) == (6, 3):
+        # 6-2 bundled graph state:
+        ns.components.instructions.INSTR_CZ(qmem, positions=[0,2])
+        ns.components.instructions.INSTR_CZ(qmem, positions=[0,3])
+        ns.components.instructions.INSTR_CZ(qmem, positions=[0,4])
+        ns.components.instructions.INSTR_CZ(qmem, positions=[0,5])
+        
+        ns.components.instructions.INSTR_CZ(qmem, positions=[1,2])
+        ns.components.instructions.INSTR_CZ(qmem, positions=[1,3])
+        ns.components.instructions.INSTR_CZ(qmem, positions=[1,4])
+        ns.components.instructions.INSTR_CZ(qmem, positions=[1,5])
+        
+        ns.components.instructions.INSTR_CZ(qmem, positions=[2,4])
+        ns.components.instructions.INSTR_CZ(qmem, positions=[2,5])
+        ns.components.instructions.INSTR_CZ(qmem, positions=[3,4])
+        ns.components.instructions.INSTR_CZ(qmem, positions=[3,5])
+        
 
-    measurement_result, prob = measure(Q[0], ns.Z)
-    # combine_Q(Q, verbose=0)
-    measurement_result, prob = measure(Q[1], ns.Z)
-    # combine_Q(Q, verbose=0)
-    measurement_result, prob = measure(Q[2], ns.Z)
     
-    measurement_result, prob = measure(Q[3], ns.Z)
-    
-    measurement_result, prob = measure(Q[2], ns.X)
-    
-    measurement_result, prob = measure(Q[2], ns.Y)
-    
-    
-    # print_state_as_ket(Q)
+    qnf.print_state_as_ket(Q)
     
     # measurement_result, prob = measure(Q[0], ns.Z)
     # measurement_result, prob = measure(Q[0], ns.X)

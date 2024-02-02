@@ -289,9 +289,16 @@ class QEurope():
         Qlient.listports = [Qlient_send, Qlient_receive]
 
 
+def combine_qubits(Q: list, v: bool=False):
+    if v:
+        print('combine_qubits')
+    for q in Q[1:]:
+        Q[0].combine(q)
+    # return Q
+    
 def print_state_as_ket(Q, print_format='plain', verbose=1):
     
-    # combine_Q(Q)
+    combine_qubits(Q)
     
     # n_qubits = len(Q)
     # print('len(Q)=', len(Q))

@@ -9,10 +9,9 @@ import matplotlib.pyplot as plt
 
 plt.close('all')
 plt.rcParams['text.usetex'] = True
-plt.rcParams['text.usetex'] = True
 
 font = {'family' : 'normal',
         'weight' : 'bold',
-        'size'   : 22}
+        'size'   : 10}
 
 plt.rc('font', **font)

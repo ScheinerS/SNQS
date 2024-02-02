@@ -190,7 +190,7 @@ def qonnect_star_networks(nodes, verbose=1):
         Graph_States.append(S)
     '''
     
-qonnect_star_networks(nodes)
+# qonnect_star_networks(nodes)
 
 
 #%%
@@ -258,25 +258,26 @@ if flags['draw_network']:
 
 # %%
 
-for q in Qonnectors:
+# Creation of the state and distribution:
+for q in Qonnectors.values():
     ghzprotocol = qnf.send_ghz(Qlients, parameters, q)  # THIS LINE IS WRONG. THE GHZ STATE SHOULD BE DISTRIBUTED ONLY TO THE NODES LINKED TO THE QONNECTOR q, NOT TO ALL QLIENTS.
-    print('Check this line.')
+    print('Fix this for non-star graphs.')
 
 ghzprotocol.start()
 
-protocols = []
+# Reception of the states by the Qlients:
+protocols = {}
 for node in nodes.values():
-    # ESTO NO FUNCIONA:
-    #protocols.append(qe.ReceiveProtocol(Qonnectors.values(), qe.Qlient_meas_succ, qe.Qlient_meas_flip, False, Qlients[node._name]))
-    # protocols[node._name].start()
-    print('FIX THIS LATER...')
+    if node._type=='Qlient':
+        protocols[node._name] = qe.ReceiveProtocol(Qonnectors.values(), qe.Qlient_meas_succ, qe.Qlient_meas_flip, False, Qlients[node._name])
+        protocols[node._name].start()
     
 # Simulation starting
 stat = ns.sim_run(duration=parameters['simtime'])
 
 # Adding dark count for each Qlient
-for node in nodes:
-    qe.addDarkCounts(Qlients[node.name].keylist, parameters['DCRateWorst'] * parameters['DetectGateWorst'],
+for ql in Qlients.values():
+    qe.addDarkCounts(ql.keylist, parameters['DCRateWorst'] * parameters['DetectGateWorst'],
                      int(parameters['simtime'] / parameters['ghz_time']))
 
 #%% Sifting.
